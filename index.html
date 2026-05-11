@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Agenda — Implantação de IA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e0ddd6;
+    --border-strong: #c8c4bc;
+    --text: #1a1916;
+    --text-muted: #6b6860;
+    --text-hint: #a8a49e;
+    --accent: #1a1916;
+    --green-bg: #eaf5ee;
+    --green-border: #a8d8b8;
+    --green-text: #1a5c30;
+    --red-bg: #fdf0ee;
+    --red-border: #f0bdb4;
+    --red-text: #7a2015;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .page { max-width: 780px; margin: 0 auto; }
+
+  header { margin-bottom: 2.5rem; }
+  header h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.3px; }
+  header p { font-size: 14px; color: var(--text-muted); margin-top: 4px; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 2rem; }
+  .stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-val { font-size: 26px; font-weight: 500; letter-spacing: -0.5px; }
+  .stat-lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .week-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .week-btn {
+    padding: 7px 14px; border: 1px solid var(--border); border-radius: 20px;
+    background: transparent; color: var(--text-muted); font-size: 13px;
+    font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s;
+  }
+  .week-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .week-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  .period-label {
+    font-size: 11px; font-weight: 500; color: var(--text-hint);
+    text-transform: uppercase; letter-spacing: 0.08em; margin: 1.25rem 0 0.75rem;
+  }
+
+  .slots-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+
+  .slot {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 14px 16px;
+    transition: border-color 0.15s;
+  }
+  .slot:hover { border-color: var(--border-strong); }
+  .slot.booked { background: var(--green-bg); border-color: var(--green-border); }
+
+  .slot-time { font-family: 'DM Mono', monospace; font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+  .slot.booked .slot-time { color: var(--green-text); }
+
+  .slot-name { font-size: 13px; color: var(--text-muted); min-height: 18px; margin-bottom: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot.booked .slot-name { color: var(--green-text); font-weight: 500; }
+
+  .badge { font-size: 11px; margin-bottom: 10px; }
+  .badge-free { color: var(--text-hint); }
+  .badge-booked { color: var(--green-text); }
+
+  .slot-btn {
+    width: 100%; padding: 7px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: transparent;
+    font-size: 12px; color: var(--text-muted); cursor: pointer;
+    font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+  }
+  .slot-btn:hover { background: var(--bg); border-color: var(--border-strong); color: var(--text); }
+  .slot-btn.cancel { color: var(--red-text); border-color: var(--red-border); }
+  .slot-btn.cancel:hover { background: var(--red-bg); }
+
+  /* Modal */
+  .overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(26,25,22,0.4); z-index: 100;
+    align-items: center; justify-content: center;
+  }
+  .overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-lg); padding: 24px; width: 340px;
+    max-width: 92vw; box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  .modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
+  .modal .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+  .modal input {
+    width: 100%; padding: 9px 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 14px; font-family: 'DM Sans', sans-serif;
+    color: var(--text); background: var(--bg);
+    margin-bottom: 14px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .modal input:focus { border-color: var(--accent); }
+  .modal-actions { display: flex; gap: 8px; }
+  .modal-actions button {
+    flex: 1; padding: 9px; border-radius: var(--radius);
+    font-size: 14px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; border: 1px solid var(--border);
+    background: transparent; color: var(--text); transition: all 0.15s;
+  }
+  .modal-actions button:hover { background: var(--bg); }
+  .modal-actions .btn-confirm {
+    background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500;
+  }
+  .modal-actions .btn-confirm:hover { opacity: 0.88; }
+
+  @media (max-width: 480px) {
+    .stats { grid-template-columns: repeat(3, 1fr); }
+    .stat-val { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Agenda de implantação — IA na empresa</h1>
+    <p>Sextas-feiras · sessões de 30 min · manhã e tarde</p>
+  </header>
+
+  <div class="stats" id="stats"></div>
+  <div class="week-tabs" id="weekTabs"></div>
+
+  <p class="period-label">Manhã</p>
+  <div class="slots-grid" id="slotsManha"></div>
+
+  <p class="period-label">Tarde</p>
+  <div class="slots-grid" id="slotsTarde"></div>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3 id="modal-title"></h3>
+    <p class="modal-sub" id="modal-sub"></p>
+    <input type="text" id="modal-name" placeholder="Seu nome completo" maxlength="40" />
+    <div class="modal-actions">
+      <button onclick="closeModal()">Cancelar</button>
+      <button class="btn-confirm" onclick="confirmBook()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const MANHA = ['09:00','09:30','10:00','10:30','11:00','11:30'];
+const TARDE = ['13:30','14:00','14:30','15:00','15:30','16:00','16:30'];
+const ALL = [...MANHA, ...TARDE];
+const KEY = 'agenda_ia_empresa_v1';
+
+function nextFridays(n) {
+  const out = []; let d = new Date(); d.setHours(0,0,0,0);
+  while (out.length < n) { if (d.getDay() === 5) out.push(new Date(d)); d.setDate(d.getDate()+1); }
+  return out;
+}
+const fridays = nextFridays(6);
+const fmt = d => d.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+const fmtFull = d => d.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'});
+
+let state = {};
+fridays.forEach((_,i) => { state[i] = {}; ALL.forEach(t => state[i][t] = null); });
+
+let activeWeek = 0, pendingSlot = null;
+
+function loadState() {
+  try { const s = localStorage.getItem(KEY); if (s) state = JSON.parse(s); } catch(e) {}
+}
+function saveState() {
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function render() { renderTabs(); renderStats(); renderGrid(MANHA, 'slotsManha'); renderGrid(TARDE, 'slotsTarde'); }
+
+function renderTabs() {
+  document.getElementById('weekTabs').innerHTML = fridays.map((f,i) =>
+    `<button class="week-btn${i===activeWeek?' active':''}" onclick="setWeek(${i})">${fmt(f)}</button>`
+  ).join('');
+}
+
+function renderStats() {
+  let total=0, booked=0;
+  Object.values(state).forEach(w => Object.values(w).forEach(v => { total++; if(v) booked++; }));
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-val">${total}</div><div class="stat-lbl">Total de vagas</div></div>
+    <div class="stat"><div class="stat-val">${booked}</div><div class="stat-lbl">Agendados</div></div>
+    <div class="stat"><div class="stat-val">${total-booked}</div><div class="stat-lbl">Disponíveis</div></div>
+  `;
+}
+
+function renderGrid(times, id) {
+  const week = state[activeWeek];
+  document.getElementById(id).innerHTML = times.map(t => {
+    const name = week[t]; const ok = !!name;
+    return `<div class="slot${ok?' booked':''}">
+      <div class="slot-time">${t}</div>
+      <div class="slot-name">${name||''}</div>
+      <div class="badge ${ok?'badge-booked':'badge-free'}">${ok?'✓ Agendado':'Disponível'}</div>
+      ${ok
+        ? `<button class="slot-btn cancel" onclick="cancelSlot('${t}')">Cancelar</button>`
+        : `<button class="slot-btn" onclick="openModal('${t}')">+ Agendar</button>`}
+    </div>`;
+  }).join('');
+}
+
+function setWeek(i) { activeWeek = i; render(); }
+
+function openModal(t) {
+  pendingSlot = t;
+  document.getElementById('modal-title').textContent = `Agendar ${t}`;
+  document.getElementById('modal-sub').textContent = `Sexta-feira, ${fmt(fridays[activeWeek])} — 30 minutos`;
+  document.getElementById('modal-name').value = '';
+  document.getElementById('overlay').classList.add('open');
+  setTimeout(() => document.getElementById('modal-name').focus(), 50);
+}
+
+function closeModal() {
+  document.getElementById('overlay').classList.remove('open');
+  pendingSlot = null;
+}
+
+function confirmBook() {
+  const name = document.getElementById('modal-name').value.trim();
+  if (!name) { document.getElementById('modal-name').focus(); return; }
+  state[activeWeek][pendingSlot] = name;
+  saveState(); closeModal(); render();
+}
+
+function cancelSlot(t) {
+  state[activeWeek][t] = null;
+  saveState(); render();
+}
+
+document.getElementById('modal-name').addEventListener('keydown', e => { if(e.key==='Enter') confirmBook(); });
+document.getElementById('overlay').addEventListener('click', e => { if(e.target===document.getElementById('overlay')) closeModal(); });
+
+loadState();
+render();
+</script>
+</body>
+</html>

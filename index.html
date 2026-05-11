@@ -158,7 +158,6 @@
     }
   ];
 
-  // state key: tabIndex_dayIndex_time_groupId (house/obra) or tabIndex_dayIndex_time
   let state = {};
 
   function initState() {
@@ -263,11 +262,9 @@
 
     document.getElementById('daysGrid').innerHTML = days.map((d, di) => {
       let slotsHtml = '';
-
       if (isShared) {
         const manhaTimes = times.filter(t => parseInt(t) < 13);
         const tardeTimes = times.filter(t => parseInt(t) >= 13);
-
         if (manhaTimes.length) {
           slotsHtml += '<div class="period-sep">Manhã</div>';
           manhaTimes.forEach(t => { slotsHtml += buildSharedSlot(ti, tab, di, t, d.date); });
@@ -279,7 +276,6 @@
       } else {
         times.forEach(t => { slotsHtml += buildSimpleSlot(ti, g, di, t, d.date); });
       }
-
       return `<div class="day-col">
         <div class="day-header">
           <div class="day-name">${d.name}</div>
@@ -308,121 +304,10 @@
   }
 
   function buildSharedSlot(ti, tab, di, t, date) {
-    // Find which group booked this slot (if any)
     let bookedName = null, bookedGroup = null;
     tab.groups.forEach(g => {
       const key = ti+'_'+di+'_'+t.replace(':','')+'_'+g.id;
       if (state[key]) { bookedName = state[key]; bookedGroup = g; }
     });
-
     const ok = !!bookedName;
-    const bookedStyle = ok ? 'background:'+bookedGroup.light+';border-color:'+bookedGroup.dot+';' : '';
-    const nameStyle = ok ? 'color:'+bookedGroup.color+';font-weight:500;' : '';
-    const timeStyle = ok ? 'color:'+bookedGroup.color+';' : '';
-    const badge = ok ? `<span class="slot-group-badge" style="background:${bookedGroup.color};">${bookedGroup.label}</span>` : '';
-
-    // Check if both groups booked this time (shouldn't happen but just in case)
-    const allBooked = tab.groups.every(g => state[ti+'_'+di+'_'+t.replace(':','')+'_'+g.id]);
-    let btn = '';
-    if (allBooked) {
-      const keys = tab.groups.map(g => ti+'_'+di+'_'+t.replace(':','')+'_'+g.id).join(',');
-      btn = `<button class="slot-btn cancel" onclick="cancelSharedSlot('${ti}','${di}','${t.replace(':','')}')">Cancelar</button>`;
-    } else if (ok) {
-      btn = `<button class="slot-btn cancel" onclick="cancelSharedSlot('${ti}','${di}','${t.replace(':','')}')">Cancelar</button>`;
-    } else {
-      btn = `<button class="slot-btn" onclick="openSharedModal('${ti}','${di}','${t}','${date}')">+ Agendar</button>`;
-    }
-
-    return `<div class="slot" style="${bookedStyle}">
-      <div class="slot-time" style="${timeStyle}">${t}</div>
-      <div class="slot-name" style="${nameStyle}">${bookedName||''}</div>
-      ${badge}
-      ${btn}
-    </div>`;
-  }
-
-  window.setTab = (i) => { activeTab = i; render(); };
-
-  window.openSimpleModal = (key, time, date) => {
-    pendingKey = key;
-    const tab = TABS[activeTab];
-    const g = tab.groups[0];
-    pendingColor = g.color;
-    document.getElementById('modal-title').textContent = 'Agendar ' + time;
-    document.getElementById('modal-sub').textContent = date + ' · ' + g.label + ' · 1 hora';
-    document.getElementById('modal-name').value = '';
-    document.getElementById('btn-confirm').style.background = g.color;
-    const booked = bookedForSimple(activeTab);
-    document.getElementById('modal-members-area').innerHTML =
-      `<div class="modal-names">${g.members.filter(m=>!booked.has(m)).map(m=>`<button class="modal-name-btn" onclick="selectName('${m}',this)">${m}</button>`).join('')}</div>`;
-    document.getElementById('overlay').classList.add('open');
-    setTimeout(() => document.getElementById('modal-name').focus(), 50);
-  };
-
-  window.openSharedModal = (ti, di, time, date) => {
-    const tab = TABS[parseInt(ti)];
-    pendingColor = tab.color;
-    document.getElementById('modal-title').textContent = 'Agendar ' + time;
-    document.getElementById('modal-sub').textContent = date + ' · 1 hora · escolha o grupo';
-    document.getElementById('modal-name').value = '';
-    document.getElementById('btn-confirm').style.background = tab.color;
-
-    let html = '';
-    tab.groups.forEach(g => {
-      const booked = bookedForGroup(parseInt(ti), g.id);
-      const available = g.members.filter(m => !booked.has(m));
-      if (available.length === 0) return;
-      html += `<p class="modal-section-label" style="color:${g.color};">${g.label}</p>`;
-      html += `<div class="modal-names">${available.map(m=>`<button class="modal-name-btn" data-group="${g.id}" data-ti="${ti}" data-di="${di}" data-time="${time.replace(':','')}" onclick="selectSharedName('${m}','${g.id}','${ti}','${di}','${time.replace(':','')}',this,'${g.color}')">${m}</button>`).join('')}</div>`;
-    });
-    document.getElementById('modal-members-area').innerHTML = html;
-    document.getElementById('overlay').classList.add('open');
-    setTimeout(() => document.getElementById('modal-name').focus(), 50);
-  };
-
-  window.selectName = (name, el) => {
-    document.querySelectorAll('.modal-name-btn').forEach(b => { b.classList.remove('selected'); b.style.background=''; b.style.color=''; });
-    el.classList.add('selected'); el.style.background = TABS[activeTab].groups[0].color; el.style.color = '#fff';
-    document.getElementById('modal-name').value = name;
-    pendingKey = null;
-  };
-
-  let pendingSharedKey = null;
-  window.selectSharedName = (name, gid, ti, di, tkey, el, color) => {
-    document.querySelectorAll('.modal-name-btn').forEach(b => { b.classList.remove('selected'); b.style.background=''; b.style.color=''; });
-    el.classList.add('selected'); el.style.background = color; el.style.color = '#fff';
-    document.getElementById('modal-name').value = name;
-    pendingSharedKey = ti+'_'+di+'_'+tkey+'_'+gid;
-    pendingColor = color;
-    document.getElementById('btn-confirm').style.background = color;
-  };
-
-  window.closeModal = () => {
-    document.getElementById('overlay').classList.remove('open');
-    pendingKey = null; pendingSharedKey = null;
-  };
-
-  window.confirmBook = async () => {
-    const name = document.getElementById('modal-name').value.trim();
-    if (!name) { document.getElementById('modal-name').focus(); return; }
-    const key = pendingSharedKey || pendingKey;
-    if (!key) { document.getElementById('modal-name').focus(); return; }
-    await set(ref(db, 'agenda_v5/' + key), name);
-    closeModal();
-  };
-
-  window.cancelSlot = async (key) => { await remove(ref(db, 'agenda_v5/' + key)); };
-
-  window.cancelSharedSlot = async (ti, di, tkey) => {
-    const tab = TABS[parseInt(ti)];
-    for (const g of tab.groups) {
-      const key = ti+'_'+di+'_'+tkey+'_'+g.id;
-      if (state[key]) await remove(ref(db, 'agenda_v5/' + key));
-    }
-  };
-
-  document.getElementById('modal-name').addEventListener('keydown', e => { if(e.key==='Enter') window.confirmBook(); });
-  document.getElementById('overlay').addEventListener('click', e => { if(e.target===document.getElementById('overlay')) window.closeModal(); });
-</script>
-</body>
-</html>
+    const bookedStyle = ok ? 'background:'+bookedGroup.light+';border

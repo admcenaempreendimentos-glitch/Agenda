@@ -25,29 +25,40 @@
   .week-btn { padding: 8px 18px; border: 1px solid var(--border); border-radius: 20px; background: transparent; color: var(--text-muted); font-size: 13px; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s; }
   .week-btn:hover { border-color: var(--border-strong); color: var(--text); }
   .week-btn.active { color: #fff; border-color: transparent; }
-  .week-info { display: flex; align-items: center; gap: 10px; margin-bottom: 1.5rem; padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); }
-  .week-info-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  .week-info p { font-size: 13px; color: var(--text-muted); }
-  .week-info strong { color: var(--text); font-weight: 500; }
+  .group-info { margin-bottom: 10px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); overflow: hidden; }
+  .group-info-top { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+  .group-info-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .group-info-top p { font-size: 13px; color: var(--text-muted); }
+  .group-info-top strong { color: var(--text); font-weight: 500; }
+  .members-list { padding: 8px 16px 10px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .member-tag { font-size: 12px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); }
+  .member-tag.booked { color: #fff; border-color: transparent; }
   .days-grid { display: grid; gap: 10px; }
   .day-col { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
   .day-header { padding: 10px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: baseline; gap: 8px; }
   .day-name { font-size: 12px; font-weight: 500; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
   .day-date { font-size: 15px; font-weight: 500; }
   .day-slots { padding: 10px; display: grid; gap: 8px; }
+  .period-sep { font-size: 10px; font-weight: 500; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 2px 0; }
   .slot { border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
   .slot-time { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
-  .slot-name { font-size: 12px; color: var(--text-muted); margin: 3px 0 8px; min-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot-name { font-size: 12px; color: var(--text-muted); margin: 3px 0 4px; min-height: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .slot-group-badge { font-size: 10px; padding: 2px 7px; border-radius: 10px; display: inline-block; margin-bottom: 6px; color: #fff; }
   .slot-btn { width: 100%; padding: 5px; border: 1px solid var(--border); border-radius: 6px; background: transparent; font-size: 11px; color: var(--text-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
   .slot-btn:hover { background: var(--bg); border-color: var(--border-strong); color: var(--text); }
   .slot-btn.cancel { border-color: #f0bdb4; color: #7a2015; }
   .slot-btn.cancel:hover { background: #fdf0ee; }
-  .period-sep { font-size: 10px; font-weight: 500; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.08em; padding: 2px 2px 0; }
   .overlay { display: none; position: fixed; inset: 0; background: rgba(26,25,22,0.4); z-index: 100; align-items: center; justify-content: center; }
   .overlay.open { display: flex; }
-  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; width: 340px; max-width: 92vw; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; width: 360px; max-width: 92vw; box-shadow: 0 8px 32px rgba(0,0,0,0.12); }
   .modal h3 { font-size: 16px; font-weight: 500; margin-bottom: 4px; }
-  .modal .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 18px; }
+  .modal .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+  .modal-section-label { font-size: 11px; font-weight: 500; color: var(--text-hint); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .modal-names { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .modal-name-btn { font-size: 13px; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; }
+  .modal-name-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .modal-name-btn.selected { color: #fff; border-color: transparent; }
+  .modal-or { font-size: 12px; color: var(--text-hint); margin: 10px 0 8px; }
   .modal input { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius); font-size: 14px; font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--bg); margin-bottom: 14px; outline: none; transition: border-color 0.15s; }
   .modal input:focus { border-color: var(--accent); }
   .modal-actions { display: flex; gap: 8px; }
@@ -66,7 +77,7 @@
   </header>
   <div class="stats" id="stats"></div>
   <div class="week-tabs" id="weekTabs"></div>
-  <div class="week-info" id="weekInfo"></div>
+  <div id="groupInfos"></div>
   <div class="days-grid" id="daysGrid"></div>
 </div>
 
@@ -74,7 +85,9 @@
   <div class="modal">
     <h3 id="modal-title"></h3>
     <p class="modal-sub" id="modal-sub"></p>
-    <input type="text" id="modal-name" placeholder="Seu nome completo" maxlength="40" />
+    <div id="modal-members-area"></div>
+    <p class="modal-or">ou digite um nome:</p>
+    <input type="text" id="modal-name" placeholder="Nome completo" maxlength="40" />
     <div class="modal-actions">
       <button onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" id="btn-confirm" onclick="confirmBook()">Confirmar</button>
@@ -99,91 +112,133 @@
   const app = initializeApp(firebaseConfig);
   const db = getDatabase(app);
 
-  const WEEKS = [
+  const TABS = [
     {
-      label: 'Diretoria e Líderes',
-      group: 'Diretoria e Líderes',
-      color: '#185fa5',
-      dot: '#378add',
-      light: '#eef4fb',
-      times: ['09:00','14:00'],
-      days: [
-        { name: 'Qui', date: '15/05' },
-        { name: 'Sex', date: '16/05' },
-        { name: 'Seg', date: '19/05' },
-        { name: 'Ter', date: '20/05' },
-        { name: 'Qua', date: '21/05' },
-      ]
+      label: 'Diretoria e Líderes', color: '#185fa5',
+      groups: [{
+        id: 'dir', label: 'Diretoria e Líderes',
+        color: '#185fa5', dot: '#378add', light: '#eef4fb',
+        members: ['Bruna','Ademir','Danielle','Juliano','Fabiana','Ana'],
+        times: ['09:00','14:00'],
+        days: [
+          {name:'Qui',date:'15/05'},{name:'Sex',date:'16/05'},
+          {name:'Seg',date:'19/05'},{name:'Ter',date:'20/05'},{name:'Qua',date:'21/05'}
+        ]
+      }]
     },
     {
-      label: 'Escritório',
-      group: 'Escritório',
-      color: '#3c1a6b',
-      dot: '#7f77dd',
-      light: '#f3eefb',
-      times: ['09:00','13:00','16:00'],
-      days: [
-        { name: 'Qui', date: '22/05' },
-        { name: 'Sex', date: '23/05' },
-        { name: 'Seg', date: '26/05' },
-        { name: 'Ter', date: '27/05' },
-        { name: 'Qua', date: '28/05' },
-      ]
+      label: 'Escritório', color: '#3c1a6b',
+      groups: [{
+        id: 'esc', label: 'Escritório',
+        color: '#3c1a6b', dot: '#7f77dd', light: '#f3eefb',
+        members: ['Jair','Evandro','Laleska','Aline','Karoline','Luana','Grazielle','Beatriz','Andrei'],
+        times: ['09:00','13:00','16:00'],
+        days: [
+          {name:'Qui',date:'22/05'},{name:'Sex',date:'23/05'},
+          {name:'Seg',date:'26/05'},{name:'Ter',date:'27/05'},{name:'Qua',date:'28/05'}
+        ]
+      }]
     },
     {
-      label: 'House',
-      group: 'House',
-      color: '#854f0b',
-      dot: '#ef9f27',
-      light: '#fdf6e8',
-      times: ['09:00','10:00','11:00','14:00','15:00','16:00'],
-      days: [
-        { name: 'Qui', date: '29/05' },
-        { name: 'Sex', date: '30/05' },
+      label: 'House e Obra', color: '#854f0b',
+      sharedTimes: ['09:00','10:00','11:00','13:00','14:00','15:00','16:00'],
+      days: [{name:'Qui',date:'29/05'},{name:'Sex',date:'30/05'}],
+      groups: [
+        {
+          id: 'house', label: 'House',
+          color: '#854f0b', dot: '#ef9f27', light: '#fdf6e8',
+          members: ['Gustavo','Glaucia','Bruna Heydt','Rolf','Paula']
+        },
+        {
+          id: 'obra', label: 'Obra',
+          color: '#1a5c30', dot: '#1d9e75', light: '#eaf5ee',
+          members: ['Ailton','Heitor','Rafael']
+        }
       ]
     }
   ];
 
+  // state key: tabIndex_dayIndex_time_groupId (house/obra) or tabIndex_dayIndex_time
   let state = {};
-  WEEKS.forEach((w, wi) => {
-    w.days.forEach((d, di) => {
-      w.times.forEach(t => { state[wi+'_'+di+'_'+t.replace(':','')] = null; });
-    });
-  });
 
-  let activeWeek = 0;
+  function initState() {
+    TABS.forEach((tab, ti) => {
+      if (tab.sharedTimes) {
+        tab.days.forEach((d, di) => {
+          tab.sharedTimes.forEach(t => {
+            tab.groups.forEach(g => {
+              state[ti+'_'+di+'_'+t.replace(':','')+'_'+g.id] = null;
+            });
+          });
+        });
+      } else {
+        tab.groups[0].days.forEach((d, di) => {
+          tab.groups[0].times.forEach(t => {
+            state[ti+'_'+di+'_'+t.replace(':','')] = null;
+          });
+        });
+      }
+    });
+  }
+  initState();
+
+  let activeTab = 0;
   let pendingKey = null;
+  let pendingColor = '#1a1916';
 
-  const dbRef = ref(db, 'agenda_v3');
+  const dbRef = ref(db, 'agenda_v5');
   onValue(dbRef, (snapshot) => {
+    initState();
     const data = snapshot.val();
-    WEEKS.forEach((w, wi) => {
-      w.days.forEach((d, di) => {
-        w.times.forEach(t => { state[wi+'_'+di+'_'+t.replace(':','')] = null; });
-      });
-    });
     if (data) {
-      Object.entries(data).forEach(([key, name]) => {
-        if (key in state) state[key] = name;
+      Object.entries(data).forEach(([key, val]) => {
+        if (key in state) state[key] = val;
       });
     }
     render();
   });
 
-  function render() { renderTabs(); renderStats(); renderWeekInfo(); renderDays(); }
+  function bookedForGroup(ti, gid) {
+    const names = new Set();
+    Object.entries(state).forEach(([key, name]) => {
+      if (key.startsWith(ti+'_') && key.endsWith('_'+gid) && name) names.add(name);
+    });
+    return names;
+  }
+
+  function bookedForSimple(ti) {
+    const names = new Set();
+    Object.entries(state).forEach(([key, name]) => {
+      if (key.startsWith(ti+'_') && name) names.add(name);
+    });
+    return names;
+  }
+
+  function render() { renderTabs(); renderStats(); renderGroupInfos(); renderDays(); }
 
   function renderTabs() {
-    document.getElementById('weekTabs').innerHTML = WEEKS.map((w, i) =>
-      `<button class="week-btn${i===activeWeek?' active':''}" style="${i===activeWeek?'background:'+w.color+';':''}" onclick="setWeek(${i})">${w.label}</button>`
+    document.getElementById('weekTabs').innerHTML = TABS.map((t, i) =>
+      `<button class="week-btn${i===activeTab?' active':''}" style="${i===activeTab?'background:'+t.color+';':''}" onclick="setTab(${i})">${t.label}</button>`
     ).join('');
   }
 
-  function renderWeekInfo() {
-    const w = WEEKS[activeWeek];
-    const timesStr = w.times.map(t => t + 'h').join(' &nbsp;·&nbsp; ');
-    document.getElementById('weekInfo').innerHTML =
-      `<div class="week-info-dot" style="background:${w.dot}"></div>
-       <p>Grupo: <strong>${w.group}</strong> &nbsp;·&nbsp; Horários: <strong>${timesStr}</strong> &nbsp;·&nbsp; Sessão de <strong>1 hora</strong></p>`;
+  function renderGroupInfos() {
+    const tab = TABS[activeTab];
+    document.getElementById('groupInfos').innerHTML = tab.groups.map(g => {
+      const booked = tab.sharedTimes ? bookedForGroup(activeTab, g.id) : bookedForSimple(activeTab);
+      const tags = g.members.map(m => {
+        const isBooked = booked.has(m);
+        return `<span class="member-tag${isBooked?' booked':''}" style="${isBooked?'background:'+g.color+';':''}">${m}</span>`;
+      }).join('');
+      const timesStr = tab.sharedTimes ? tab.sharedTimes.map(t=>t+'h').join(' · ') : g.times.map(t=>t+'h').join(' · ');
+      return `<div class="group-info">
+        <div class="group-info-top">
+          <div class="group-info-dot" style="background:${g.dot}"></div>
+          <p>Grupo: <strong>${g.label}</strong> &nbsp;·&nbsp; Horários: <strong>${timesStr}</strong></p>
+        </div>
+        <div class="members-list">${tags}</div>
+      </div>`;
+    }).join('');
   }
 
   function renderStats() {
@@ -196,40 +251,33 @@
     `;
   }
 
-  function buildSlot(wi, di, t, w) {
-    const key = wi+'_'+di+'_'+t.replace(':','');
-    const name = state[key];
-    const ok = !!name;
-    const bookedStyle = ok ? 'background:'+w.light+';border-color:'+w.dot+';' : '';
-    const nameStyle = ok ? 'color:'+w.color+';font-weight:500;' : '';
-    const timeStyle = ok ? 'color:'+w.color+';' : '';
-    const dayDate = WEEKS[wi].days[di].date;
-    const btn = ok
-      ? `<button class="slot-btn cancel" onclick="cancelSlot('${key}')">Cancelar</button>`
-      : `<button class="slot-btn" onclick="openModal('${key}','${t}','${dayDate}')">+ Agendar</button>`;
-    return `<div class="slot" style="${bookedStyle}">
-      <div class="slot-time" style="${timeStyle}">${t}</div>
-      <div class="slot-name" style="${nameStyle}">${name||''}</div>
-      ${btn}
-    </div>`;
-  }
-
   function renderDays() {
-    const wi = activeWeek;
-    const w = WEEKS[wi];
-    const cols = w.days.length;
-    document.getElementById('daysGrid').style.gridTemplateColumns = 'repeat('+cols+', 1fr)';
+    const ti = activeTab;
+    const tab = TABS[ti];
+    const isShared = !!tab.sharedTimes;
+    const days = isShared ? tab.days : tab.groups[0].days;
+    const times = isShared ? tab.sharedTimes : tab.groups[0].times;
+    const g = tab.groups[0];
 
-    document.getElementById('daysGrid').innerHTML = w.days.map((d, di) => {
+    document.getElementById('daysGrid').style.gridTemplateColumns = 'repeat('+days.length+', 1fr)';
+
+    document.getElementById('daysGrid').innerHTML = days.map((d, di) => {
       let slotsHtml = '';
 
-      if (wi === 2) {
-        slotsHtml += '<div class="period-sep">Manhã</div>';
-        ['09:00','10:00','11:00'].forEach(t => { slotsHtml += buildSlot(wi, di, t, w); });
-        slotsHtml += '<div class="period-sep" style="margin-top:4px;">Tarde</div>';
-        ['14:00','15:00','16:00'].forEach(t => { slotsHtml += buildSlot(wi, di, t, w); });
+      if (isShared) {
+        const manhaTimes = times.filter(t => parseInt(t) < 13);
+        const tardeTimes = times.filter(t => parseInt(t) >= 13);
+
+        if (manhaTimes.length) {
+          slotsHtml += '<div class="period-sep">Manhã</div>';
+          manhaTimes.forEach(t => { slotsHtml += buildSharedSlot(ti, tab, di, t, d.date); });
+        }
+        if (tardeTimes.length) {
+          slotsHtml += '<div class="period-sep" style="margin-top:4px;">Tarde</div>';
+          tardeTimes.forEach(t => { slotsHtml += buildSharedSlot(ti, tab, di, t, d.date); });
+        }
       } else {
-        w.times.forEach(t => { slotsHtml += buildSlot(wi, di, t, w); });
+        times.forEach(t => { slotsHtml += buildSimpleSlot(ti, g, di, t, d.date); });
       }
 
       return `<div class="day-col">
@@ -242,33 +290,135 @@
     }).join('');
   }
 
-  window.setWeek = (i) => { activeWeek = i; render(); };
+  function buildSimpleSlot(ti, g, di, t, date) {
+    const key = ti+'_'+di+'_'+t.replace(':','');
+    const name = state[key];
+    const ok = !!name;
+    const bookedStyle = ok ? 'background:'+g.light+';border-color:'+g.dot+';' : '';
+    const nameStyle = ok ? 'color:'+g.color+';font-weight:500;' : '';
+    const timeStyle = ok ? 'color:'+g.color+';' : '';
+    const btn = ok
+      ? `<button class="slot-btn cancel" onclick="cancelSlot('${key}')">Cancelar</button>`
+      : `<button class="slot-btn" onclick="openSimpleModal('${key}','${t}','${date}')">+ Agendar</button>`;
+    return `<div class="slot" style="${bookedStyle}">
+      <div class="slot-time" style="${timeStyle}">${t}</div>
+      <div class="slot-name" style="${nameStyle}">${name||''}</div>
+      ${btn}
+    </div>`;
+  }
 
-  window.openModal = (key, time, date) => {
+  function buildSharedSlot(ti, tab, di, t, date) {
+    // Find which group booked this slot (if any)
+    let bookedName = null, bookedGroup = null;
+    tab.groups.forEach(g => {
+      const key = ti+'_'+di+'_'+t.replace(':','')+'_'+g.id;
+      if (state[key]) { bookedName = state[key]; bookedGroup = g; }
+    });
+
+    const ok = !!bookedName;
+    const bookedStyle = ok ? 'background:'+bookedGroup.light+';border-color:'+bookedGroup.dot+';' : '';
+    const nameStyle = ok ? 'color:'+bookedGroup.color+';font-weight:500;' : '';
+    const timeStyle = ok ? 'color:'+bookedGroup.color+';' : '';
+    const badge = ok ? `<span class="slot-group-badge" style="background:${bookedGroup.color};">${bookedGroup.label}</span>` : '';
+
+    // Check if both groups booked this time (shouldn't happen but just in case)
+    const allBooked = tab.groups.every(g => state[ti+'_'+di+'_'+t.replace(':','')+'_'+g.id]);
+    let btn = '';
+    if (allBooked) {
+      const keys = tab.groups.map(g => ti+'_'+di+'_'+t.replace(':','')+'_'+g.id).join(',');
+      btn = `<button class="slot-btn cancel" onclick="cancelSharedSlot('${ti}','${di}','${t.replace(':','')}')">Cancelar</button>`;
+    } else if (ok) {
+      btn = `<button class="slot-btn cancel" onclick="cancelSharedSlot('${ti}','${di}','${t.replace(':','')}')">Cancelar</button>`;
+    } else {
+      btn = `<button class="slot-btn" onclick="openSharedModal('${ti}','${di}','${t}','${date}')">+ Agendar</button>`;
+    }
+
+    return `<div class="slot" style="${bookedStyle}">
+      <div class="slot-time" style="${timeStyle}">${t}</div>
+      <div class="slot-name" style="${nameStyle}">${bookedName||''}</div>
+      ${badge}
+      ${btn}
+    </div>`;
+  }
+
+  window.setTab = (i) => { activeTab = i; render(); };
+
+  window.openSimpleModal = (key, time, date) => {
     pendingKey = key;
-    const w = WEEKS[activeWeek];
+    const tab = TABS[activeTab];
+    const g = tab.groups[0];
+    pendingColor = g.color;
     document.getElementById('modal-title').textContent = 'Agendar ' + time;
-    document.getElementById('modal-sub').textContent = date + ' · ' + w.group + ' · 1 hora';
+    document.getElementById('modal-sub').textContent = date + ' · ' + g.label + ' · 1 hora';
     document.getElementById('modal-name').value = '';
-    document.getElementById('btn-confirm').style.background = w.color;
+    document.getElementById('btn-confirm').style.background = g.color;
+    const booked = bookedForSimple(activeTab);
+    document.getElementById('modal-members-area').innerHTML =
+      `<div class="modal-names">${g.members.filter(m=>!booked.has(m)).map(m=>`<button class="modal-name-btn" onclick="selectName('${m}',this)">${m}</button>`).join('')}</div>`;
     document.getElementById('overlay').classList.add('open');
     setTimeout(() => document.getElementById('modal-name').focus(), 50);
   };
 
+  window.openSharedModal = (ti, di, time, date) => {
+    const tab = TABS[parseInt(ti)];
+    pendingColor = tab.color;
+    document.getElementById('modal-title').textContent = 'Agendar ' + time;
+    document.getElementById('modal-sub').textContent = date + ' · 1 hora · escolha o grupo';
+    document.getElementById('modal-name').value = '';
+    document.getElementById('btn-confirm').style.background = tab.color;
+
+    let html = '';
+    tab.groups.forEach(g => {
+      const booked = bookedForGroup(parseInt(ti), g.id);
+      const available = g.members.filter(m => !booked.has(m));
+      if (available.length === 0) return;
+      html += `<p class="modal-section-label" style="color:${g.color};">${g.label}</p>`;
+      html += `<div class="modal-names">${available.map(m=>`<button class="modal-name-btn" data-group="${g.id}" data-ti="${ti}" data-di="${di}" data-time="${time.replace(':','')}" onclick="selectSharedName('${m}','${g.id}','${ti}','${di}','${time.replace(':','')}',this,'${g.color}')">${m}</button>`).join('')}</div>`;
+    });
+    document.getElementById('modal-members-area').innerHTML = html;
+    document.getElementById('overlay').classList.add('open');
+    setTimeout(() => document.getElementById('modal-name').focus(), 50);
+  };
+
+  window.selectName = (name, el) => {
+    document.querySelectorAll('.modal-name-btn').forEach(b => { b.classList.remove('selected'); b.style.background=''; b.style.color=''; });
+    el.classList.add('selected'); el.style.background = TABS[activeTab].groups[0].color; el.style.color = '#fff';
+    document.getElementById('modal-name').value = name;
+    pendingKey = null;
+  };
+
+  let pendingSharedKey = null;
+  window.selectSharedName = (name, gid, ti, di, tkey, el, color) => {
+    document.querySelectorAll('.modal-name-btn').forEach(b => { b.classList.remove('selected'); b.style.background=''; b.style.color=''; });
+    el.classList.add('selected'); el.style.background = color; el.style.color = '#fff';
+    document.getElementById('modal-name').value = name;
+    pendingSharedKey = ti+'_'+di+'_'+tkey+'_'+gid;
+    pendingColor = color;
+    document.getElementById('btn-confirm').style.background = color;
+  };
+
   window.closeModal = () => {
     document.getElementById('overlay').classList.remove('open');
-    pendingKey = null;
+    pendingKey = null; pendingSharedKey = null;
   };
 
   window.confirmBook = async () => {
     const name = document.getElementById('modal-name').value.trim();
     if (!name) { document.getElementById('modal-name').focus(); return; }
-    await set(ref(db, 'agenda_v3/' + pendingKey), name);
+    const key = pendingSharedKey || pendingKey;
+    if (!key) { document.getElementById('modal-name').focus(); return; }
+    await set(ref(db, 'agenda_v5/' + key), name);
     closeModal();
   };
 
-  window.cancelSlot = async (key) => {
-    await remove(ref(db, 'agenda_v3/' + key));
+  window.cancelSlot = async (key) => { await remove(ref(db, 'agenda_v5/' + key)); };
+
+  window.cancelSharedSlot = async (ti, di, tkey) => {
+    const tab = TABS[parseInt(ti)];
+    for (const g of tab.groups) {
+      const key = ti+'_'+di+'_'+tkey+'_'+g.id;
+      if (state[key]) await remove(ref(db, 'agenda_v5/' + key));
+    }
   };
 
   document.getElementById('modal-name').addEventListener('keydown', e => { if(e.key==='Enter') window.confirmBook(); });

@@ -1,0 +1,1 @@
+ALTER TABLE public.demands ADD COLUMN IF NOT EXISTS subject_group text; CREATE INDEX IF NOT EXISTS demands_subject_group_idx ON public.demands (user_id, subject_group) WHERE subject_group IS NOT NULL;

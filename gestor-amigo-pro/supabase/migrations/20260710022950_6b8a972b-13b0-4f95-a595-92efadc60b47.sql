@@ -1,0 +1,1 @@
+ALTER TABLE public.demands ALTER COLUMN priority DROP NOT NULL; ALTER TABLE public.demands ALTER COLUMN priority DROP DEFAULT;

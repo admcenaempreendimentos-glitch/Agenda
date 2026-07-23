@@ -7,7 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Sparkles } from "lucide-react";
+import { Send } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,41 @@ import { useQueryClient } from "@tanstack/react-query";
 export const Route = createFileRoute("/_authenticated/assistente")({
   component: AssistantPage,
 });
+
+function MascoteAvatar({ size = 36 }: { size?: number }) {
+  return (
+    <img
+      src="/mascote.png"
+      alt="Carl, o assistente"
+      width={size}
+      height={size}
+      className="rounded-full object-cover object-top bg-muted ring-1 ring-border shrink-0"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
+function MascoteAnimado() {
+  return (
+    <video
+      src="/mascote.webm"
+      poster="/mascote.png"
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="h-56 w-auto mb-4 drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
+      onError={(e) => {
+        // navegadores sem suporte a WebM com alpha caem para a imagem estática
+        const el = e.currentTarget;
+        const img = document.createElement("img");
+        img.src = "/mascote.png";
+        img.className = el.className;
+        el.replaceWith(img);
+      }}
+    />
+  );
+}
 
 function AssistantPage() {
   const [input, setInput] = useState("");
@@ -51,15 +86,15 @@ function AssistantPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-6rem)]">
       <PageHeader
-        title="Assistente"
-        description="Converse com uma IA que tem contexto dos seus escritórios, demandas e contratos."
+        title="Carl — Assistente"
+        description="Converse com o Carl, a IA que tem contexto dos seus escritórios, demandas e contratos."
       />
 
       <Card ref={scrollRef} className="flex-1 overflow-y-auto p-6 mb-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto">
-            <Sparkles className="h-8 w-8 text-accent mb-3" />
-            <h3 className="font-serif text-lg mb-2">Como posso ajudar?</h3>
+            <MascoteAnimado />
+            <h3 className="font-serif text-lg mb-2">Olá! Eu sou o Carl. Como posso ajudar?</h3>
             <p className="text-sm text-muted-foreground">
               Pergunte sobre demandas pendentes, contratos em revisão, prazos de vigência ou peça um resumo do que precisa da sua atenção hoje.
             </p>
@@ -67,7 +102,8 @@ function AssistantPage() {
         ) : (
           <div className="space-y-6">
             {messages.map((m) => (
-              <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start items-end gap-2"}>
+                {m.role === "assistant" && <MascoteAvatar />}
                 <div className={`max-w-[80%] rounded-lg px-4 py-3 text-sm ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                   {m.role === "assistant" ? (
                     <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -80,8 +116,9 @@ function AssistantPage() {
               </div>
             ))}
             {status === "submitted" && (
-              <div className="flex justify-start">
-                <div className="bg-muted rounded-lg px-4 py-3 text-sm text-muted-foreground">Pensando…</div>
+              <div className="flex justify-start items-end gap-2">
+                <MascoteAvatar />
+                <div className="bg-muted rounded-lg px-4 py-3 text-sm text-muted-foreground">Carl está pensando…</div>
               </div>
             )}
           </div>

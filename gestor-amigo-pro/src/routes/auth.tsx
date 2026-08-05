@@ -52,11 +52,13 @@ function AuthPage() {
     <div className="min-h-screen flex items-center justify-center bg-background p-6">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="mx-auto h-12 w-12 rounded-sm bg-primary text-primary-foreground flex items-center justify-center font-serif text-xl mb-4">
-            J
-          </div>
-          <h1 className="font-serif text-3xl text-foreground">Painel Jurídico</h1>
-          <p className="text-sm text-muted-foreground mt-1">Construtora & Incorporadora</p>
+          <img
+            src="/mascote.png"
+            alt="Carl, assistente do Juris Cena"
+            className="mx-auto h-32 w-auto mb-4 drop-shadow-[0_10px_20px_rgba(0,0,0,0.25)]"
+          />
+          <h1 className="font-serif text-3xl text-foreground">Juris Cena</h1>
+          <p className="text-sm text-muted-foreground mt-1">Painel Jurídico · Cena Empreendimentos</p>
         </div>
         <Card className="p-6">
           <form onSubmit={submit} className="space-y-4">

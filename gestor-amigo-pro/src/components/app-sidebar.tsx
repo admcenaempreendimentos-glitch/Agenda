@@ -34,12 +34,14 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/70">
       <SidebarHeader className="border-b border-sidebar-border/60 px-5 py-6">
         <div className="flex items-center gap-3">
-          <div className="h-11 w-11 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-serif text-lg shadow-[0_6px_16px_-6px_oklch(0.18_0.05_268/0.45)]">
-            J
-          </div>
+          <img
+            src="/mascote.png"
+            alt="Carl"
+            className="h-11 w-11 rounded-xl object-cover object-top bg-primary/10 ring-1 ring-sidebar-border shadow-[0_6px_16px_-6px_oklch(0.18_0.05_268/0.45)]"
+          />
           <div className="flex flex-col leading-tight group-data-[collapsible=icon]:hidden">
-            <span className="font-serif text-lg text-sidebar-foreground">Jurídico</span>
-            <span className="text-[10px] uppercase tracking-[0.22em] text-sidebar-foreground/60">Construtora</span>
+            <span className="font-serif text-lg text-sidebar-foreground">Juris Cena</span>
+            <span className="text-[10px] uppercase tracking-[0.22em] text-sidebar-foreground/60">Cena Empreendimentos</span>
           </div>
         </div>
       </SidebarHeader>

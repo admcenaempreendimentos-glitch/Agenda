@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Plus, ListChecks, FileText, Building2 } from "lucide-react";
+import { Plus, ListChecks, FileText, Building2, CalendarClock } from "lucide-react";
 import {
   contractStatusLabel,
   demandPriorityLabel,
@@ -22,7 +22,7 @@ function DashboardPage() {
   const { data } = useQuery({
     queryKey: ["dashboard"],
     queryFn: async () => {
-      const [demands, contracts, firms] = await Promise.all([
+      const [demands, contracts, firms, expiring] = await Promise.all([
         supabase
           .from("demands")
           .select("id, title, priority, status, due_at, law_firm_id, law_firms(name)")
@@ -36,11 +36,19 @@ function DashboardPage() {
           .order("updated_at", { ascending: false })
           .limit(20),
         supabase.from("law_firms").select("id, name, status").eq("status", "active"),
+        supabase
+          .from("contracts")
+          .select("id, title, counterparty, status, ends_at")
+          .eq("status", "signed")
+          .not("ends_at", "is", null)
+          .order("ends_at", { ascending: true })
+          .limit(30),
       ]);
       return {
         demands: demands.data ?? [],
         contracts: contracts.data ?? [],
         firms: firms.data ?? [],
+        expiring: expiring.data ?? [],
       };
     },
   });
@@ -53,6 +61,10 @@ function DashboardPage() {
     return dd !== null && dd <= 7;
   });
   const inReview = activeContracts.filter((c) => c.status === "in_review");
+  const expiringSoon = (data?.expiring ?? []).filter((c) => {
+    const dd = daysUntil(c.ends_at);
+    return dd !== null && dd <= 60;
+  });
 
   return (
     <div>
@@ -75,12 +87,48 @@ function DashboardPage() {
         }
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
         <MetricCard icon={ListChecks} label="Demandas em aberto" value={openDemands.length} />
         <MetricCard icon={ListChecks} label="Vencendo em 7 dias" value={dueSoon.length} accent />
         <MetricCard icon={FileText} label="Contratos para revisar" value={inReview.length} />
+        <MetricCard icon={CalendarClock} label="Vigências em 60 dias" value={expiringSoon.length} accent={expiringSoon.length > 0} />
         <MetricCard icon={Building2} label="Escritórios ativos" value={firms.length} />
       </div>
+
+      {expiringSoon.length > 0 && (
+        <Card className="p-6 mb-6 border-accent/40">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-serif text-xl">Alertas de vigência</h2>
+            <span className="text-xs text-muted-foreground">contratos assinados vencendo em até 60 dias</span>
+          </div>
+          <ul className="divide-y divide-border">
+            {expiringSoon.map((c) => {
+              const dd = daysUntil(c.ends_at)!;
+              const tone = dd < 0 || dd <= 7 ? "destructive" : dd <= 30 ? "default" : "secondary";
+              return (
+                <li key={c.id} className="py-3">
+                  <Link
+                    to="/contratos/$id"
+                    params={{ id: c.id }}
+                    className="flex items-center justify-between gap-3 hover:opacity-80"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{c.title}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{c.counterparty ?? "sem contraparte"}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <Badge variant={tone}>
+                        {dd < 0 ? `vencido há ${Math.abs(dd)}d` : dd === 0 ? "vence hoje" : `vence em ${dd}d`}
+                      </Badge>
+                      <p className="text-xs mt-1 text-muted-foreground">{formatDate(c.ends_at)}</p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="p-6">

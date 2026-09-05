@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
-import { contractTypesByCategory, contractCategoryLabel, type ContractCategory } from "@/lib/format";
+import { contractTypesByCategory, contractCategoryLabel, type ContractCategory, parseBRLToCents } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/contratos/novo")({
   component: NewContract,
@@ -43,7 +43,8 @@ function NewContract() {
     mutationFn: async () => {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Sem sessão");
-      const value_cents = form.value_brl ? Math.round(Number(form.value_brl.replace(",", ".")) * 100) : null;
+      const value_cents = parseBRLToCents(form.value_brl);
+      if (form.value_brl.trim() && value_cents === null) throw new Error("Valor inválido. Use o formato 1.234.567,89.");
       const { data, error } = await supabase.from("contracts").insert({
         user_id: user.user.id,
         title: form.title,

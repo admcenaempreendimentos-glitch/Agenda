@@ -24,6 +24,7 @@ import {
   roundStatusTone,
   contractTypesByCategory,
   type ContractCategory,
+  parseBRLToCents,
 } from "@/lib/format";
 import { toast } from "sonner";
 import { CardCustomizer } from "@/components/card-customizer";
@@ -314,7 +315,8 @@ function EditContractDialog({
 
   const save = useMutation({
     mutationFn: async () => {
-      const value_cents = form.value_brl ? Math.round(Number(form.value_brl.replace(",", ".")) * 100) : null;
+      const value_cents = parseBRLToCents(form.value_brl);
+      if (form.value_brl.trim() && value_cents === null) throw new Error("Valor inválido. Use o formato 1.234.567,89.");
       const { error } = await supabase.from("contracts").update({
         title: form.title,
         contract_type: form.contract_type,

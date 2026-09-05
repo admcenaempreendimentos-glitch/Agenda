@@ -103,6 +103,21 @@ export function CardCustomizer({
   }
 
   async function save() {
+    // Blindagem set/2026: só imagens do armazenamento do próprio sistema.
+    // URLs externas rastreiam IP/horário de quem abre o painel e são bloqueadas pela CSP.
+    if (cover) {
+      let ok = false;
+      try {
+        const allowed = new URL(import.meta.env.VITE_SUPABASE_URL as string).origin;
+        ok = cover.startsWith(`${allowed}/storage/`);
+      } catch {
+        ok = false;
+      }
+      if (!ok) {
+        toast.error("Use apenas imagens enviadas pelo botão acima. Endereços externos não são permitidos.");
+        return;
+      }
+    }
     setSaving(true);
     const { error } = await supabase
       .from(table)
@@ -261,7 +276,7 @@ export function CardCustomizer({
                   }}
                 />
               </label>
-              <span className="text-[10px] text-muted-foreground">ou cole uma URL</span>
+              <span className="text-[10px] text-muted-foreground">ou cole uma URL do armazenamento do sistema</span>
             </div>
             <Input
               value={cover}

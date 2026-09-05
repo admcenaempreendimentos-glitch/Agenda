@@ -49,13 +49,17 @@ function FromEmail() {
         .filter(Boolean)
         .join("\n");
 
-      const description = `${header}\n\n---\n\n${form.body}`.trim();
+      // Blindagem set/2026: o e-mail é conteúdo EXTERNO. Remove caracteres de controle e
+      // invisíveis (zero-width, marcas bidi) usados para esconder instruções à IA, e limita o tamanho.
+      const limpar = (s: string) =>
+        s.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F\u200B-\u200F\u2028-\u202E\u2060-\u2064\uFEFF]/g, "");
+      const description = `${header}\n\n---\n\n${limpar(form.body).slice(0, 20_000)}`.trim();
 
       const { data, error } = await supabase
         .from("demands")
         .insert({
           user_id: user.user.id,
-          title: form.subject || "(sem assunto)",
+          title: limpar(form.subject).slice(0, 300) || "(sem assunto)",
           description,
           law_firm_id: form.law_firm_id || null,
           practice_area: form.practice_area || null,

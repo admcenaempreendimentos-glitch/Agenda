@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as MfaRouteImport } from './routes/mfa'
 import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
 import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedSegurancaRouteImport } from './routes/_authenticated/seguranca'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AuthenticatedContratosIndexRouteImport } from './routes/_authenticated/contratos/index'
 import { Route as AuthenticatedContratosIdRouteImport } from './routes/_authenticated/contratos/$id'
@@ -40,6 +42,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MfaRoute = MfaRouteImport.update({
+  id: '/mfa',
+  path: '/mfa',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
   id: '/assistente',
   path: '/assistente',
@@ -54,6 +61,11 @@ const AuthenticatedConfiguracoesRoute =
 const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
   id: '/painel',
   path: '/painel',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSegurancaRoute = AuthenticatedSegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const ApiChatRoute = ApiChatRouteImport.update({
@@ -118,9 +130,11 @@ const AuthenticatedEscritoriosIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mfa': typeof MfaRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/api/chat': typeof ApiChatRoute
   '/contratos/$id': typeof AuthenticatedContratosIdRoute
   '/contratos/novo': typeof AuthenticatedContratosNovoRoute
@@ -135,9 +149,11 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/mfa': typeof MfaRoute
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/seguranca': typeof AuthenticatedSegurancaRoute
   '/api/chat': typeof ApiChatRoute
   '/contratos/$id': typeof AuthenticatedContratosIdRoute
   '/contratos/novo': typeof AuthenticatedContratosNovoRoute
@@ -154,9 +170,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/mfa': typeof MfaRoute
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/seguranca': typeof AuthenticatedSegurancaRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/contratos/$id': typeof AuthenticatedContratosIdRoute
   '/_authenticated/contratos/novo': typeof AuthenticatedContratosNovoRoute
@@ -173,9 +191,11 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/mfa'
     | '/assistente'
     | '/configuracoes'
     | '/painel'
+    | '/seguranca'
     | '/api/chat'
     | '/contratos/$id'
     | '/contratos/novo'
@@ -190,9 +210,11 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/mfa'
     | '/assistente'
     | '/configuracoes'
     | '/painel'
+    | '/seguranca'
     | '/api/chat'
     | '/contratos/$id'
     | '/contratos/novo'
@@ -208,9 +230,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/mfa'
     | '/_authenticated/assistente'
     | '/_authenticated/configuracoes'
     | '/_authenticated/painel'
+    | '/_authenticated/seguranca'
     | '/api/chat'
     | '/_authenticated/contratos/$id'
     | '/_authenticated/contratos/novo'
@@ -227,6 +251,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  MfaRoute: typeof MfaRoute
   ApiChatRoute: typeof ApiChatRoute
 }
 
@@ -253,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mfa': {
+      id: '/mfa'
+      path: '/mfa'
+      fullPath: '/mfa'
+      preLoaderRoute: typeof MfaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/assistente': {
       id: '/_authenticated/assistente'
       path: '/assistente'
@@ -272,6 +304,13 @@ declare module '@tanstack/react-router' {
       path: '/painel'
       fullPath: '/painel'
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/seguranca': {
+      id: '/_authenticated/seguranca'
+      path: '/seguranca'
+      fullPath: '/seguranca'
+      preLoaderRoute: typeof AuthenticatedSegurancaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/chat': {
@@ -351,6 +390,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedSegurancaRoute: typeof AuthenticatedSegurancaRoute
   AuthenticatedContratosIdRoute: typeof AuthenticatedContratosIdRoute
   AuthenticatedContratosNovoRoute: typeof AuthenticatedContratosNovoRoute
   AuthenticatedDemandasIdRoute: typeof AuthenticatedDemandasIdRoute
@@ -366,6 +406,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedSegurancaRoute: AuthenticatedSegurancaRoute,
   AuthenticatedContratosIdRoute: AuthenticatedContratosIdRoute,
   AuthenticatedContratosNovoRoute: AuthenticatedContratosNovoRoute,
   AuthenticatedDemandasIdRoute: AuthenticatedDemandasIdRoute,
@@ -384,6 +425,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  MfaRoute: MfaRoute,
   ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport

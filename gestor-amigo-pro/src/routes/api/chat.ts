@@ -50,6 +50,28 @@ function allowRequest(userId: string): boolean {
   return true;
 }
 
+/**
+ * Rate limit distribuído (função SQL rate_limit_hit, migração 20260905130000):
+ * vale para todas as instâncias serverless. Se a função ainda não existir,
+ * cai para o limitador em memória acima.
+ */
+async function allowRequestDistributed(supabase: Supa, userId: string): Promise<boolean> {
+  try {
+    const client = supabase as unknown as {
+      rpc: (fn: string, args: Record<string, unknown>) => PromiseLike<{ data: unknown; error: unknown }>;
+    };
+    const { data, error } = await client.rpc.call(supabase, "rate_limit_hit", {
+      p_scope: "chat",
+      p_limit: RATE_MAX_REQUESTS,
+      p_window_seconds: RATE_WINDOW_MS / 1000,
+    });
+    if (!error && typeof data === "boolean") return data;
+  } catch {
+    /* função ainda não aplicada no banco */
+  }
+  return allowRequest(userId);
+}
+
 // ---------- utilidades ----------
 function makeClient(token: string) {
   return createClient(
@@ -398,7 +420,7 @@ export const Route = createFileRoute("/api/chat")({
         const userId = userData.user.id;
 
         // 4) rate limit
-        if (!allowRequest(userId)) {
+        if (!(await allowRequestDistributed(supabase, userId))) {
           return new Response("Muitas requisições. Aguarde alguns minutos.", {
             status: 429,
             headers: { "Retry-After": "120" },

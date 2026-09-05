@@ -127,6 +127,24 @@ export function formatDate(value: string | null | undefined) {
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+/**
+ * Converte valor digitado em reais para centavos, aceitando os formatos
+ * "1.234.567,89", "1234567,89", "1234567.89", "R$ 1.234", "1234".
+ * Retorna null para entrada vazia ou inválida (antes, "1.500,00" virava R$ 1,50).
+ */
+export function parseBRLToCents(input: string | null | undefined): number | null {
+  const s = (input ?? "").replace(/[R$\s]/g, "").trim();
+  if (!s) return null;
+  let norm: string;
+  if (/,\d{1,2}$/.test(s)) norm = s.replace(/\./g, "").replace(",", ".");
+  else if (/\.\d{1,2}$/.test(s) && !s.includes(",")) norm = s;
+  else norm = s.replace(/[.,]/g, "");
+  if (!/^\d+(\.\d{1,2})?$/.test(norm)) return null;
+  const n = Number(norm);
+  if (!Number.isFinite(n) || n < 0 || n > 1e10) return null;
+  return Math.round(n * 100);
+}
+
 export function formatCurrency(cents: number | null | undefined) {
   if (cents == null) return "—";
   return (cents / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });

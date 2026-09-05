@@ -60,7 +60,10 @@ const SECURITY_HEADERS: Record<string, string> = {
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
   "Cross-Origin-Opener-Policy": "same-origin",
+  "Cross-Origin-Resource-Policy": "same-origin",
   "X-Permitted-Cross-Domain-Policies": "none",
+  // Sistema interno: não deve ser indexado nem arquivado por buscadores.
+  "X-Robots-Tag": "noindex, nofollow, noarchive",
 };
 
 const securityHeadersMiddleware = createMiddleware().server(async ({ next }) => {

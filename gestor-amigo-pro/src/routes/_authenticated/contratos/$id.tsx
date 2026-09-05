@@ -70,15 +70,34 @@ function ContractDetail() {
       const nextRound = (last?.round_number ?? 0) + 1;
       const nextSentBy = nextDirection === "sent" ? "Eu" : (data?.contract?.counterparty || "Contraparte");
       const nextStatus = nextDirection === "sent" ? "sent" : "returned";
-      const path = `${user.user.id}/${id}/${Date.now()}-${file.name}`;
-      const up = await supabase.storage.from("legal-documents").upload(path, file);
+      // Validação de upload (auditoria set/2026): tipo, tamanho e nome do arquivo.
+      const ext = (file.name.split(".").pop() ?? "").toLowerCase();
+      const allowed: Record<string, string> = {
+        pdf: "application/pdf",
+        doc: "application/msword",
+        docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      };
+      if (!allowed[ext]) throw new Error("Tipo de arquivo não permitido. Envie PDF, DOC ou DOCX.");
+      if (file.size > 25 * 1024 * 1024) throw new Error("Arquivo muito grande (máx. 25 MB).");
+      if (file.size === 0) throw new Error("Arquivo vazio.");
+      const safeBase = file.name
+        .replace(/\.[^.]+$/, "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9._-]+/g, "_")
+        .slice(0, 80) || "minuta";
+      const path = `${user.user.id}/${id}/${Date.now()}-${safeBase}.${ext}`;
+      const up = await supabase.storage.from("legal-documents").upload(path, file, {
+        contentType: allowed[ext],
+        upsert: false,
+      });
       if (up.error) throw up.error;
       const { error } = await supabase.from("contract_versions").insert({
         user_id: user.user.id,
         contract_id: id,
         version_label: `v${nextRound}`,
         storage_path: path,
-        file_name: file.name,
+        file_name: file.name.slice(0, 200),
         direction: nextDirection,
         sent_by: nextSentBy,
         round_number: nextRound,

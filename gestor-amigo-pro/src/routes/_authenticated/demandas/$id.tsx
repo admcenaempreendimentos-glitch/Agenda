@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ArrowLeft, Send, Pencil, Trash2 } from "lucide-react";
-import { demandStatusLabel, demandPriorityLabel, formatDate } from "@/lib/format";
+import { demandStatusLabel, demandPriorityLabel, formatDate, todayISO } from "@/lib/format";
 import { toast } from "sonner";
 import { CardCustomizer } from "@/components/card-customizer";
 
@@ -51,7 +51,7 @@ function DemandDetail() {
     mutationFn: async (status: string) => {
       const patch = {
         status: status as "open" | "in_progress" | "waiting" | "completed" | "cancelled",
-        ...(status === "completed" ? { completed_at: new Date().toISOString().slice(0, 10) } : {}),
+        ...(status === "completed" ? { completed_at: todayISO() } : {}),
       };
       const { error } = await supabase.from("demands").update(patch).eq("id", id);
       if (error) throw error;

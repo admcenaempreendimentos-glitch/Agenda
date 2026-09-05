@@ -1,0 +1,15 @@
+# Segredos
+.env
+.env.*
+!.env.example
+# Arquivos de dados — nunca versionar em repositório (LGPD)
+*.xlsx
+*.xls
+*.csv
+*.pdf
+# Python
+__pycache__/
+*.pyc
+# SO / editor
+.DS_Store
+Thumbs.db

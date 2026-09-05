@@ -16,6 +16,36 @@ export const Route = createFileRoute("/_authenticated/assistente")({
   component: AssistantPage,
 });
 
+const toolLabel: Record<string, string> = {
+  create_demand: "Demanda criada",
+  update_demand: "Demanda atualizada",
+  delete_demand: "Exclusão de demanda",
+  add_demand_update: "Anotação registrada",
+  create_law_firm: "Escritório cadastrado",
+  update_law_firm: "Escritório atualizado",
+  delete_law_firm: "Exclusão de escritório",
+  create_contract: "Contrato criado",
+  update_contract: "Contrato atualizado",
+  delete_contract: "Exclusão de contrato",
+};
+
+/*
+ * Renderização segura da saída do modelo: imagens são suprimidas (canal de
+ * exfiltração via URL) e links só são clicáveis se forem http(s), sempre em
+ * nova aba com rel="noopener noreferrer".
+ */
+const safeMarkdown: React.ComponentProps<typeof ReactMarkdown>["components"] = {
+  img: () => null,
+  a: ({ href, children }) => {
+    const ok = typeof href === "string" && /^https?:\/\//i.test(href);
+    return ok ? (
+      <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
+    ) : (
+      <span>{children}</span>
+    );
+  },
+};
+
 function MascoteAvatar({ size = 36 }: { size?: number }) {
   return (
     <img
@@ -106,8 +136,23 @@ function AssistantPage() {
                 {m.role === "assistant" && <MascoteAvatar />}
                 <div className={`max-w-[80%] rounded-lg px-4 py-3 text-sm ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
                   {m.role === "assistant" ? (
-                    <div className="prose prose-sm max-w-none dark:prose-invert">
-                      <ReactMarkdown>{m.parts.map((p) => (p.type === "text" ? p.text : "")).join("")}</ReactMarkdown>
+                    <div className="space-y-2">
+                      {/* Ações executadas pela IA ficam visíveis ao usuário (auditoria set/2026) */}
+                      {m.parts.filter((p) => p.type.startsWith("tool-")).map((p, i) => {
+                        const tp = p as unknown as { type: string; state?: string; output?: { ok?: boolean; error?: string; needs_confirmation?: boolean } };
+                        const name = tp.type.slice(5);
+                        const ok = tp.output?.ok;
+                        const tone = ok === true ? "text-emerald-700 dark:text-emerald-400" : ok === false ? "text-amber-700 dark:text-amber-400" : "text-muted-foreground";
+                        return (
+                          <div key={`${m.id}-t${i}`} className={`text-[11px] uppercase tracking-wider font-mono ${tone}`}>
+                            ⚙ {toolLabel[name] ?? name}
+                            {ok === false && tp.output?.error ? <span className="normal-case tracking-normal font-sans"> — {tp.output.error}</span> : null}
+                          </div>
+                        );
+                      })}
+                      <div className="prose prose-sm max-w-none dark:prose-invert">
+                        <ReactMarkdown components={safeMarkdown}>{m.parts.map((p) => (p.type === "text" ? p.text : "")).join("")}</ReactMarkdown>
+                      </div>
                     </div>
                   ) : (
                     <p className="whitespace-pre-wrap">{m.parts.map((p) => (p.type === "text" ? p.text : "")).join("")}</p>

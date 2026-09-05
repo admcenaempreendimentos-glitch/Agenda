@@ -11,9 +11,14 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+/*
+ * Acesso somente por convite (auditoria set/2026): o autocadastro público foi
+ * removido. Contas são criadas pelo administrador no painel do Supabase
+ * (Authentication → Users → Invite user). A mensagem de erro é genérica para
+ * impedir enumeração de contas existentes.
+ */
 function AuthPage() {
   const navigate = useNavigate();
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,21 +33,11 @@ function AuthPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        toast.success("Conta criada. Você já pode acessar.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      }
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      if (error) throw error;
       navigate({ to: "/" });
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao autenticar");
+    } catch {
+      toast.error("E-mail ou senha inválidos.");
     } finally {
       setLoading(false);
     }
@@ -63,7 +58,7 @@ function AuthPage() {
         <Card className="p-6">
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
+              <Label htmlFor="email">E-mail corporativo</Label>
               <Input
                 id="email"
                 type="email"
@@ -71,6 +66,7 @@ function AuthPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                placeholder="nome@cenaempreendimentos.com.br"
               />
             </div>
             <div className="space-y-2">
@@ -79,22 +75,18 @@ function AuthPage() {
                 id="password"
                 type="password"
                 required
-                minLength={8}
+                minLength={12}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                autoComplete="current-password"
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Aguarde…" : mode === "signup" ? "Criar conta" : "Entrar"}
+              {loading ? "Aguarde…" : "Entrar"}
             </Button>
-            <button
-              type="button"
-              onClick={() => setMode(mode === "signup" ? "signin" : "signup")}
-              className="w-full text-xs text-muted-foreground hover:text-foreground"
-            >
-              {mode === "signup" ? "Já tenho conta — entrar" : "Primeiro acesso — criar conta"}
-            </button>
+            <p className="text-center text-xs text-muted-foreground">
+              Acesso restrito a colaboradores. Solicite seu convite ao setor Administrativo.
+            </p>
           </form>
         </Card>
       </div>

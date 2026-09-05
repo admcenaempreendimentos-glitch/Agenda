@@ -31,3 +31,8 @@ dist-ssr
 *.sln
 *.sw?
 package-lock.json
+
+# Segredos — nunca versionar
+.env
+.env.*
+!.env.example

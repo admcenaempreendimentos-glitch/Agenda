@@ -100,9 +100,30 @@ export function priorityLabel(p: string | null | undefined) {
   return demandPriorityLabel[p ?? "none"] ?? "—";
 }
 
-export function formatDate(value: string | null | undefined) {
-  if (!value) return "—";
+/**
+ * Colunas DATE do Postgres chegam como "YYYY-MM-DD". `new Date("YYYY-MM-DD")`
+ * interpreta como UTC e, no Brasil (UTC-3), exibe o dia ANTERIOR. Aqui a data
+ * é montada no fuso local do navegador para evitar o deslocamento de -1 dia
+ * em prazos, vigências e assinaturas.
+ */
+export function parseDateOnly(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value);
+  if (m && value.length === 10) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/** Data de hoje no fuso local do navegador, no formato YYYY-MM-DD (para colunas DATE). */
+export function todayISO(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+export function formatDate(value: string | null | undefined) {
+  const d = parseDateOnly(value);
+  if (!d) return "—";
   return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
@@ -112,10 +133,10 @@ export function formatCurrency(cents: number | null | undefined) {
 }
 
 export function daysUntil(date: string | null | undefined) {
-  if (!date) return null;
+  const t = parseDateOnly(date);
+  if (!t) return null;
   const now = new Date();
   now.setHours(0, 0, 0, 0);
-  const t = new Date(date);
   t.setHours(0, 0, 0, 0);
   return Math.round((t.getTime() - now.getTime()) / 86400000);
 }

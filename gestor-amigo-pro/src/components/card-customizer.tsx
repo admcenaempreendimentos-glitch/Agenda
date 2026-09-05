@@ -66,11 +66,21 @@ export function CardCustomizer({
       toast.error("Imagem muito grande (máx. 5 MB)");
       return;
     }
+    // Só imagens rasterizadas comuns; extensão derivada do MIME, não do nome (auditoria set/2026).
+    const mimeToExt: Record<string, string> = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+    };
+    const ext = mimeToExt[file.type];
+    if (!ext) {
+      toast.error("Formato não permitido. Use JPG, PNG ou WebP.");
+      return;
+    }
     setUploading(true);
     try {
       const { data: user } = await supabase.auth.getUser();
       if (!user.user) throw new Error("Sem sessão");
-      const ext = file.name.split(".").pop() || "jpg";
       const path = `${user.user.id}/${table}-${id}-${Date.now()}.${ext}`;
       const up = await supabase.storage.from("card-covers").upload(path, file, {
         upsert: true,

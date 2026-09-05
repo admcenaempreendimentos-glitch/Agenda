@@ -1,4 +1,5 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { LayoutDashboard, Building2, ListChecks, FileText, Sparkles, LogOut, Settings, Moon, Sun } from "lucide-react";
 import {
   Sidebar,
@@ -29,6 +30,15 @@ export function AppSidebar() {
   const isActive = (url: string) => (url === "/" ? currentPath === "/" : currentPath.startsWith(url));
   const { theme, toggle } = useTheme();
   const dark = theme === "dark";
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  // Sair: encerra a sessão, limpa os dados jurídicos em cache e volta ao login.
+  async function signOut() {
+    await supabase.auth.signOut();
+    qc.clear();
+    navigate({ to: "/auth", replace: true });
+  }
 
   return (
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/70">
@@ -93,7 +103,7 @@ export function AppSidebar() {
           </SidebarMenuItem>
           <SidebarMenuItem>
             <SidebarMenuButton
-              onClick={() => supabase.auth.signOut()}
+              onClick={signOut}
               className="h-auto p-0 hover:bg-transparent"
             >
               <div className="nav-pill w-full text-[13px] font-medium">

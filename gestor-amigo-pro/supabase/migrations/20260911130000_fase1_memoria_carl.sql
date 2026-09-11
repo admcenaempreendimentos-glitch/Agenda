@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS public.carl_memorias (
   org_id      UUID REFERENCES public.organizacoes(id) ON DELETE RESTRICT,
   user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   escopo      TEXT NOT NULL DEFAULT 'pessoal' CHECK (escopo IN ('pessoal','equipe')),
-  area        TEXT,                        -- juridico | comercial | locacao | patrimonial | NULL = vale em todas
-  chave       TEXT NOT NULL,               -- assunto curto: "escritorio_trabalhista"
+  area        TEXT NOT NULL DEFAULT '',    -- juridico | comercial | ... | '' = vale em todas as áreas
+  chave       TEXT NOT NULL,               -- assunto curto, sempre em minúsculas: "escritorio_trabalhista"
   valor       TEXT NOT NULL,               -- o que lembrar
   origem      TEXT NOT NULL DEFAULT 'explicita' CHECK (origem IN ('explicita','inferida')),
   usos        INTEGER NOT NULL DEFAULT 0,
@@ -19,8 +19,12 @@ CREATE TABLE IF NOT EXISTS public.carl_memorias (
   atualizado_em TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS carl_memorias_chave_idx
-  ON public.carl_memorias(user_id, escopo, COALESCE(area,''), lower(chave));
+-- Índice em COLUNAS PURAS (sem expressão): é o que permite o ON CONFLICT do
+-- upsert casar. Com índice de expressão, toda gravação de memória falharia.
+DROP INDEX IF EXISTS public.carl_memorias_chave_idx;
+ALTER TABLE public.carl_memorias DROP CONSTRAINT IF EXISTS carl_memorias_unica;
+ALTER TABLE public.carl_memorias
+  ADD CONSTRAINT carl_memorias_unica UNIQUE (user_id, escopo, area, chave);
 CREATE INDEX IF NOT EXISTS carl_memorias_user_idx ON public.carl_memorias(user_id, atualizado_em DESC);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.carl_memorias TO authenticated;
@@ -44,10 +48,35 @@ DO $$ BEGIN
     FOR EACH ROW EXECUTE FUNCTION public.preenche_org_id();
   DROP TRIGGER IF EXISTS carl_memorias_touch ON public.carl_memorias;
   CREATE TRIGGER carl_memorias_touch BEFORE UPDATE ON public.carl_memorias
-    FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+    FOR EACH ROW EXECUTE FUNCTION public.set_atualizado_em();
 EXCEPTION WHEN undefined_function THEN
   RAISE NOTICE 'Aplique antes a migração da Fase 0 (20260911120000).';
 END $$;
+
+-- MFA também aqui: memória contém preferências e decisões da pessoa.
+DO $$ BEGIN
+  DROP POLICY IF EXISTS "exige mfa" ON public.carl_memorias;
+  CREATE POLICY "exige mfa" ON public.carl_memorias AS RESTRICTIVE FOR ALL TO authenticated
+    USING (
+      array[(SELECT auth.jwt()->>'aal')] <@ (
+        SELECT CASE WHEN count(id) > 0 THEN array['aal2'] ELSE array['aal1','aal2'] END
+        FROM auth.mfa_factors WHERE (SELECT auth.uid()) = user_id AND status = 'verified'
+      )
+    );
+END $$;
+
+-- Memória de equipe só pode ser criada por quem gere alguma área: evita que um
+-- colaborador injete instruções no prompt de todos os colegas.
+DROP POLICY IF EXISTS "memoria escrita" ON public.carl_memorias;
+CREATE POLICY "memoria escrita" ON public.carl_memorias FOR ALL TO authenticated
+  USING (user_id = auth.uid() OR public.e_diretoria())
+  WITH CHECK (
+    user_id = auth.uid() AND (
+      escopo = 'pessoal' OR public.e_diretoria()
+      OR public.pode_gerir('juridico') OR public.pode_gerir('comercial')
+      OR public.pode_gerir('locacao')  OR public.pode_gerir('patrimonial')
+    )
+  );
 
 -- ----------------------------------------------------------------------------
 -- BRIEFING: o que precisa de atenção, por área. Alimenta o resumo da manhã.
@@ -56,7 +85,7 @@ CREATE OR REPLACE VIEW public.carl_pendencias
 WITH (security_invoker = true) AS
 SELECT 'juridico'::text AS area, 'demanda_atrasada'::text AS tipo, d.id AS registro_id,
        d.title AS titulo, d.due_at AS data_ref,
-       (CURRENT_DATE - d.due_at) AS dias, d.user_id
+       (d.due_at - CURRENT_DATE) AS dias, d.user_id  -- negativo = atrasado
   FROM public.demands d
  WHERE d.status IN ('open','in_progress','waiting') AND d.due_at IS NOT NULL AND d.due_at < CURRENT_DATE
 UNION ALL
@@ -71,7 +100,7 @@ SELECT 'juridico', 'vigencia_vencendo', c.id, c.title, c.ends_at,
  WHERE c.status = 'signed' AND c.ends_at BETWEEN CURRENT_DATE AND CURRENT_DATE + 60
 UNION ALL
 SELECT 'juridico', 'rodada_parada', c.id, c.title, v.created_at::date,
-       (CURRENT_DATE - v.created_at::date), c.user_id
+       -(CURRENT_DATE - v.created_at::date), c.user_id  -- negativo = parada há N dias
   FROM public.contracts c
   JOIN LATERAL (SELECT created_at FROM public.contract_versions cv
                  WHERE cv.contract_id = c.id ORDER BY created_at DESC LIMIT 1) v ON true

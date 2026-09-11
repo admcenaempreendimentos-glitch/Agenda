@@ -33,6 +33,12 @@ DO $$ BEGIN
   CREATE TYPE public.nivel_acesso AS ENUM ('sem_acesso','leitura','escrita','gestao');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- As tabelas novas usam 'atualizado_em'; a set_updated_at() legada grava
+-- 'updated_at' e faria TODO UPDATE falhar. Função própria para o padrão novo.
+CREATE OR REPLACE FUNCTION public.set_atualizado_em()
+RETURNS TRIGGER LANGUAGE plpgsql SET search_path = public AS $$
+BEGIN NEW.atualizado_em = now(); RETURN NEW; END $$;
+
 CREATE TABLE IF NOT EXISTS public.organizacoes (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nome        TEXT NOT NULL,
@@ -43,7 +49,7 @@ CREATE TABLE IF NOT EXISTS public.organizacoes (
 CREATE TABLE IF NOT EXISTS public.membros (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id      UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE RESTRICT,
-  user_id     UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE RESTRICT,
+  user_id     UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
   nome        TEXT,
   email       TEXT,
   cargo       TEXT,
@@ -128,10 +134,24 @@ INSERT INTO public.organizacoes (nome, cnpj)
 SELECT 'Cena Empreendimentos', NULL
 WHERE NOT EXISTS (SELECT 1 FROM public.organizacoes);
 
-INSERT INTO public.membros (org_id, user_id, email, papel)
-SELECT (SELECT id FROM public.organizacoes ORDER BY criado_em LIMIT 1), u.id, u.email, 'colaborador'
+INSERT INTO public.membros (org_id, user_id, email, nome, papel)
+SELECT (SELECT id FROM public.organizacoes ORDER BY criado_em LIMIT 1), u.id, u.email,
+       COALESCE(u.raw_user_meta_data->>'name', u.raw_user_meta_data->>'full_name',
+                initcap(replace(split_part(u.email, '@', 1), '.', ' '))),
+       'colaborador'
 FROM auth.users u
 WHERE NOT EXISTS (SELECT 1 FROM public.membros m WHERE m.user_id = u.id);
+
+-- Sem ninguém na diretoria, ninguém administra membros nem permissões — e a
+-- própria migração ficaria sem administrador. Ajuste os e-mails se necessário.
+UPDATE public.membros SET papel = 'diretoria'
+ WHERE lower(email) IN ('adm@cenaempreendimentos.com.br')
+   AND papel <> 'diretoria';
+
+-- Rede de segurança: se nenhum e-mail acima existir, promove o usuário mais antigo.
+UPDATE public.membros SET papel = 'diretoria'
+ WHERE id = (SELECT id FROM public.membros ORDER BY criado_em LIMIT 1)
+   AND NOT EXISTS (SELECT 1 FROM public.membros WHERE papel = 'diretoria');
 
 INSERT INTO public.membro_areas (membro_id, area, nivel)
 SELECT m.id, 'juridico', 'gestao'
@@ -143,8 +163,11 @@ WHERE NOT EXISTS (SELECT 1 FROM public.membro_areas ma WHERE ma.membro_id = m.id
 CREATE OR REPLACE FUNCTION public.novo_usuario_vira_membro()
 RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 BEGIN
-  INSERT INTO public.membros (org_id, user_id, email, papel)
-  VALUES ((SELECT id FROM public.organizacoes ORDER BY criado_em LIMIT 1), NEW.id, NEW.email, 'colaborador')
+  INSERT INTO public.membros (org_id, user_id, email, nome, papel)
+  VALUES ((SELECT id FROM public.organizacoes ORDER BY criado_em LIMIT 1), NEW.id, NEW.email,
+          COALESCE(NEW.raw_user_meta_data->>'name', NEW.raw_user_meta_data->>'full_name',
+                   initcap(replace(split_part(NEW.email, '@', 1), '.', ' '))),
+          'colaborador')
   ON CONFLICT (user_id) DO NOTHING;
   RETURN NEW;
 END $$;
@@ -183,6 +206,61 @@ DROP POLICY IF EXISTS "areas administraveis" ON public.membro_areas;
 CREATE POLICY "areas administraveis" ON public.membro_areas FOR ALL TO authenticated
   USING (public.e_diretoria() AND EXISTS (SELECT 1 FROM public.membros m WHERE m.id = membro_id AND m.org_id = public.org_atual()))
   WITH CHECK (public.e_diretoria() AND EXISTS (SELECT 1 FROM public.membros m WHERE m.id = membro_id AND m.org_id = public.org_atual()));
+
+-- ----------------------------------------------------------------------------
+-- REPARO DA BLINDAGEM ANTERIOR (20260905120000)
+-- Dois defeitos graves, corrigidos aqui porque aquela migração pode já estar
+-- aplicada em produção:
+--   1. assert_same_owner teve o EXECUTE revogado de authenticated, mas os
+--      gatilhos que a chamam NÃO eram SECURITY DEFINER — resultado: nenhuma
+--      inserção em contracts/demands/filhas funcionava pelo aplicativo.
+--   2. A verificação era por user_id. Com organização e papéis, colegas da
+--      mesma empresa precisam poder vincular registros entre si; a checagem
+--      passa a ser por ORGANIZAÇÃO, que é o limite de segurança correto agora.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.assert_same_owner(p_table regclass, p_id uuid, p_user uuid)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE ok boolean; v_org uuid;
+BEGIN
+  IF p_id IS NULL THEN RETURN; END IF;
+  v_org := public.org_atual();
+  IF v_org IS NULL THEN
+    -- Antes da organização existir, mantém o critério antigo (mesmo usuário).
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM %s WHERE id = $1 AND user_id = $2)', p_table) INTO ok USING p_id, p_user;
+  ELSE
+    EXECUTE format('SELECT EXISTS (SELECT 1 FROM %s WHERE id = $1 AND org_id = $2)', p_table) INTO ok USING p_id, v_org;
+  END IF;
+  IF NOT ok THEN RAISE EXCEPTION 'Referência a registro de outra organização não permitida' USING ERRCODE = '42501'; END IF;
+END $$;
+
+-- Os gatilhos precisam ser SECURITY DEFINER para poderem chamar a função acima.
+CREATE OR REPLACE FUNCTION public.check_contract_refs() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  PERFORM public.assert_same_owner('public.law_firms', NEW.law_firm_id, NEW.user_id);
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.check_demand_refs() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  PERFORM public.assert_same_owner('public.law_firms', NEW.law_firm_id, NEW.user_id);
+  PERFORM public.assert_same_owner('public.contracts', NEW.contract_id, NEW.user_id);
+  RETURN NEW;
+END $$;
+
+CREATE OR REPLACE FUNCTION public.check_child_refs() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF TG_TABLE_NAME IN ('contract_versions','contract_reviews') THEN
+    PERFORM public.assert_same_owner('public.contracts', NEW.contract_id, NEW.user_id);
+  ELSIF TG_TABLE_NAME IN ('demand_updates','demand_attachments') THEN
+    PERFORM public.assert_same_owner('public.demands', NEW.demand_id, NEW.user_id);
+  END IF;
+  RETURN NEW;
+END $$;
+
+REVOKE ALL ON FUNCTION public.assert_same_owner(regclass, uuid, uuid) FROM PUBLIC, anon, authenticated;
 
 -- ----------------------------------------------------------------------------
 -- B) CADASTRO CENTRAL — a espinha do ecossistema
@@ -249,9 +327,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS imoveis_org_codigo_idx ON public.imoveis(org_i
 CREATE TABLE IF NOT EXISTS public.documentos (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id        UUID NOT NULL REFERENCES public.organizacoes(id) ON DELETE RESTRICT,
-  imovel_id     UUID REFERENCES public.imoveis(id) ON DELETE CASCADE,
-  pessoa_id     UUID REFERENCES public.pessoas(id) ON DELETE CASCADE,
-  spe_id        UUID REFERENCES public.spes(id) ON DELETE CASCADE,
+  -- RESTRICT de propósito: apagar um imóvel não pode apagar, em cascata,
+  -- documentos de áreas a que a pessoa não tem acesso.
+  imovel_id     UUID REFERENCES public.imoveis(id) ON DELETE RESTRICT,
+  pessoa_id     UUID REFERENCES public.pessoas(id) ON DELETE RESTRICT,
+  spe_id        UUID REFERENCES public.spes(id) ON DELETE RESTRICT,
   area          public.area_sistema NOT NULL DEFAULT 'juridico',
   titulo        TEXT NOT NULL,
   tipo          TEXT,                    -- matricula, iptu, contrato, laudo, foto…
@@ -424,10 +504,8 @@ BEGIN
   FOREACH t IN ARRAY ARRAY['membros','pessoas','spes','imoveis']
   LOOP
     EXECUTE format('DROP TRIGGER IF EXISTS %I ON public.%I', t || '_touch', t);
-    EXECUTE format('CREATE TRIGGER %I BEFORE UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.set_updated_at()', t || '_touch', t);
+    EXECUTE format('CREATE TRIGGER %I BEFORE UPDATE ON public.%I FOR EACH ROW EXECUTE FUNCTION public.set_atualizado_em()', t || '_touch', t);
   END LOOP;
-EXCEPTION WHEN undefined_function THEN
-  RAISE NOTICE 'set_updated_at() não encontrada; gatilhos de atualizado_em não criados.';
 END $$;
 
 -- Trilha de auditoria também nas tabelas novas (função criada na blindagem).
@@ -441,6 +519,49 @@ BEGIN
   END LOOP;
 EXCEPTION WHEN undefined_function THEN
   RAISE NOTICE 'audit_trigger() não encontrada; aplique antes a migração 20260905130000.';
+END $$;
+
+-- A trilha de auditoria deduz o dono de user_id; as tabelas novas usam
+-- criado_por. Generaliza para não gravar linhas órfãs.
+CREATE OR REPLACE FUNCTION public.audit_trigger() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_old JSONB; v_new JSONB; v_owner UUID; v_row UUID;
+BEGIN
+  IF TG_OP = 'DELETE' THEN v_old := to_jsonb(OLD);
+  ELSIF TG_OP = 'INSERT' THEN v_new := to_jsonb(NEW);
+  ELSE v_old := to_jsonb(OLD); v_new := to_jsonb(NEW); END IF;
+  v_owner := COALESCE((v_new->>'user_id')::uuid, (v_new->>'criado_por')::uuid,
+                      (v_old->>'user_id')::uuid, (v_old->>'criado_por')::uuid, auth.uid());
+  v_row   := COALESCE((v_new->>'id')::uuid, (v_old->>'id')::uuid, (v_new->>'membro_id')::uuid, (v_old->>'membro_id')::uuid);
+  INSERT INTO public.audit_log(actor, owner_id, table_name, row_id, action, old_data, new_data)
+  VALUES (auth.uid(), v_owner, TG_TABLE_NAME, v_row, TG_OP, v_old, v_new);
+  IF TG_OP = 'DELETE' THEN RETURN OLD; END IF;
+  RETURN NEW;
+END $$;
+
+-- ----------------------------------------------------------------------------
+-- MFA também nas tabelas novas: sem isso, dados pessoais do cadastro central
+-- seriam legíveis com token sem segundo fator.
+-- ----------------------------------------------------------------------------
+DO $$
+DECLARE t TEXT;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['organizacoes','membros','membro_areas','pessoas','spes','imoveis','documentos']
+  LOOP
+    IF to_regclass('public.' || t) IS NOT NULL THEN
+      EXECUTE format('DROP POLICY IF EXISTS "exige mfa" ON public.%I', t);
+      EXECUTE format($p$
+        CREATE POLICY "exige mfa" ON public.%I AS RESTRICTIVE FOR ALL TO authenticated
+        USING (
+          array[(SELECT auth.jwt()->>'aal')] <@ (
+            SELECT CASE WHEN count(id) > 0 THEN array['aal2'] ELSE array['aal1','aal2'] END
+            FROM auth.mfa_factors
+            WHERE (SELECT auth.uid()) = user_id AND status = 'verified'
+          )
+        )$p$, t);
+    END IF;
+  END LOOP;
 END $$;
 
 -- ----------------------------------------------------------------------------

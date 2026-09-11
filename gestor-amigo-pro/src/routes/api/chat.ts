@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertToModelMessages, streamText, stepCountIs, tool, type UIMessage } from "ai";
+import { convertToModelMessages, streamText, stepCountIs, tool, type ToolSet, type UIMessage } from "ai";
 import { createLovableAiGateway } from "@/lib/ai-gateway.server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { AREAS, type Area, type ContextoDominio, type Nivel } from "@/lib/carl/tipos";
 import { carregarMemorias, memoriasParaPrompt, ferramentasDeMemoria } from "@/lib/carl/memoria";
-import { ferramentasDeWeb } from "@/lib/carl/web";
+import { ferramentasDeWeb, buscaDisponivel } from "@/lib/carl/web";
 import { ferramentasDeCore } from "@/lib/carl/core";
 import { montarPersona } from "@/lib/carl/persona";
 
@@ -434,6 +434,8 @@ function makeTools(supabase: Supa, userId: string, textoDoUsuario: string, nivel
     }),
 
     // Ferramentas transversais, válidas em qualquer sistema da Cena.
+    // A busca na web só entra quando há chave configurada — daí o cast para
+    // ToolSet: o conjunto é montado em tempo de execução.
     ...(() => {
       const ctx: ContextoDominio = {
         supabase: supabase as never,
@@ -443,9 +445,9 @@ function makeTools(supabase: Supa, userId: string, textoDoUsuario: string, nivel
         log,
         guardedDelete: guardedDelete as never,
       };
-      return { ...ferramentasDeMemoria(ctx), ...ferramentasDeWeb(ctx), ...ferramentasDeCore(ctx) };
+      return { ...ferramentasDeMemoria(ctx), ...ferramentasDeWeb(ctx), ...ferramentasDeCore(ctx) } as ToolSet;
     })(),
-  };
+  } as ToolSet;
 }
 
 /**
@@ -461,12 +463,28 @@ type Pendencia = { tipo: string; titulo: string; dias: number | null };
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const tabela = (supabase: Supa, nome: string): any => (supabase as unknown as { from: (n: string) => any }).from(nome);
 
-async function carregarPessoa(supabase: Supa, email?: string | null) {
+/** Tabela ainda não criada (Fase 0 não aplicada) — diferente de falha de consulta. */
+function tabelaAusente(error: { code?: string } | null | undefined): boolean {
+  const c = error?.code ?? "";
+  return c === "42P01" || c === "PGRST205" || c === "PGRST202";
+}
+
+async function carregarPessoa(supabase: Supa, userId: string, email?: string | null) {
   let membro: Membro | null = null;
   let areas: Area[] = [];
   let niveis: Partial<Record<Area, Nivel>> = {};
+  let fase0Aplicada = true;
   try {
-    const { data } = await tabela(supabase, "membros").select("id, nome, cargo, papel").maybeSingle();
+    // .eq(user_id) é essencial: sem ele, maybeSingle() falha assim que houver
+    // dois membros visíveis e o Carl perde a identidade de todo mundo.
+    const { data, error } = await tabela(supabase, "membros")
+      .select("id, nome, cargo, papel")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (error) {
+      fase0Aplicada = !tabelaAusente(error);
+      if (fase0Aplicada) console.error("[chat/membros]", error.code ?? "", String(error.message ?? "").slice(0, 200));
+    }
     membro = (data as Membro | null) ?? null;
     if (membro) {
       const { data: lista } = await tabela(supabase, "membro_areas").select("area, nivel").eq("membro_id", membro.id);
@@ -482,14 +500,16 @@ async function carregarPessoa(supabase: Supa, email?: string | null) {
       }
     }
   } catch {
-    /* Fase 0 ainda não aplicada — segue no modo compatível abaixo */
+    fase0Aplicada = false;
   }
-  // Sem o modelo de papéis, mantém o comportamento atual: acesso pleno ao Jurídico.
-  if (!areas.length) {
+  // Compatibilidade APENAS quando a Fase 0 não existe: aí o comportamento antigo
+  // (acesso pleno ao Jurídico) é o correto. Com a Fase 0 aplicada e sem permissão
+  // concedida, a pessoa fica sem acesso — menor privilégio, não fail-open.
+  if (!areas.length && !fase0Aplicada) {
     areas = ["juridico"];
     niveis = { juridico: "gestao" };
   }
-  return { membro, areas, niveis, email };
+  return { membro, areas, niveis, email, fase0Aplicada };
 }
 
 async function carregarPendencias(supabase: Supa): Promise<Pendencia[]> {
@@ -555,10 +575,10 @@ export const Route = createFileRoute("/api/chat")({
         }
 
         // 5) snapshot delimitado (tag com sufixo aleatório por requisição) e truncado
-        const pessoa = await carregarPessoa(supabase, userData.user.email);
-        const areaAtual = (AREAS as readonly string[]).includes(String(body.area ?? ""))
-          ? (body.area as Area)
-          : pessoa.areas[0] ?? null;
+        const pessoa = await carregarPessoa(supabase, userId, userData.user.email);
+        // A área vem do cliente: só vale se a pessoa realmente tiver acesso a ela.
+        const areaPedida = String(body.area ?? "") as Area;
+        const areaAtual = pessoa.areas.includes(areaPedida) ? areaPedida : pessoa.areas[0] ?? null;
         const telaAtual = typeof body.tela === "string" ? body.tela.slice(0, 80) : null;
         const [ctx, memorias, pendencias] = await Promise.all([
           loadContext(supabase),
@@ -594,7 +614,12 @@ export const Route = createFileRoute("/api/chat")({
         const system = `${persona}
 
 FERRAMENTAS
-Você pode criar, atualizar e apagar escritórios, demandas e contratos; registrar anotações; guardar e consultar o que deve lembrar; pesquisar na internet com fontes; e consultar o cadastro central de imóveis e pessoas, incluindo a situação completa de um imóvel cruzando as áreas.
+Você pode criar, atualizar e apagar escritórios, demandas e contratos; registrar anotações; guardar e consultar o que deve lembrar; e consultar o cadastro central de imóveis e pessoas, incluindo a situação completa de um imóvel cruzando as áreas.${buscaDisponivel() ? " Também pode pesquisar na internet — nesse caso, cite sempre o endereço das fontes." : " Você NÃO tem acesso à internet: se perguntarem algo de fora dos registros, diga que não pode consultar."}
+
+REGRAS OPERACIONAIS
+- Use o retrato de dados abaixo para consultas e para obter os identificadores; se algo não estiver lá, diga que não consta. Descrições longas aparecem truncadas.
+- Valores monetários nas ferramentas são em CENTAVOS (R$ 1.000,00 = 100000). Datas em YYYY-MM-DD.
+- Para vincular a um escritório, contrato ou imóvel, use o identificador que aparece no retrato ou o resultado de uma busca. Em caso de ambiguidade, pergunte antes.
 
 <${tag} tipo="dados-somente-leitura">
 ESCRITÓRIOS (${ctx.firms.length}):
@@ -616,7 +641,7 @@ Data de hoje (America/Sao_Paulo): ${todayInSaoPaulo()}.`;
           model: gateway("google/gemini-2.5-flash"),
           system,
           messages: await convertToModelMessages(messages),
-          tools: makeTools(supabase, userId, ultimaMensagemDoUsuario(messages), pessoa.niveis.juridico ?? "leitura"),
+          tools: makeTools(supabase, userId, ultimaMensagemDoUsuario(messages), pessoa.niveis.juridico ?? "sem_acesso"),
           stopWhen: stepCountIs(MAX_STEPS),
           maxOutputTokens: MAX_OUTPUT_TOKENS,
           abortSignal: request.signal,

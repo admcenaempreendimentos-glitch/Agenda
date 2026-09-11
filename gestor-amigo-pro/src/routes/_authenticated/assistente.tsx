@@ -77,9 +77,10 @@ type EstadoCarl = "ocioso" | "pensando" | "falando";
  * O mascote reage ao que o Carl está fazendo: parado quando ocioso, em
  * movimento enquanto pensa ou fala. É o que tira a sensação de chatbot parado.
  */
-function MascoteAnimado({ estado = "ocioso" }: { estado?: EstadoCarl }) {
+function MascoteAnimado({ estado = "ocioso", tamanho = "grande" }: { estado?: EstadoCarl; tamanho?: "grande" | "pequeno" }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const ativo = estado !== "ocioso";
+  const altura = tamanho === "grande" ? "h-56" : "h-20";
 
   useEffect(() => {
     const v = videoRef.current;
@@ -102,7 +103,7 @@ function MascoteAnimado({ estado = "ocioso" }: { estado?: EstadoCarl }) {
       muted
       playsInline
       aria-label={estado === "pensando" ? "Carl pensando" : estado === "falando" ? "Carl falando" : "Carl"}
-      className={`h-56 w-auto mb-4 transition-all duration-500 ${
+      className={`${altura} w-auto ${tamanho === "grande" ? "mb-4" : ""} transition-all duration-500 ${
         ativo
           ? "drop-shadow-[0_14px_30px_rgba(191,140,60,0.45)] scale-[1.02]"
           : "drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
@@ -149,7 +150,10 @@ function AssistantPage() {
       body: { area: "juridico", tela: "assistente" },
     }),
     onError: (e) => toast.error(e.message),
-    onFinish: ({ message }) => {
+    onFinish: ({ message, isAbort, isError, isDisconnect }) => {
+      // Não lê em voz alta nem recarrega dados quando a resposta foi
+      // interrompida, falhou ou caiu a conexão.
+      if (isAbort || isError || isDisconnect) return;
       qc.invalidateQueries();
       if (falaRef.current.ligada) {
         const texto = message.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ").trim();
@@ -237,10 +241,12 @@ function AssistantPage() {
                 </div>
               </div>
             ))}
-            {status === "submitted" && (
-              <div className="flex justify-start items-end gap-2">
-                <MascoteAvatar />
-                <div className="bg-muted rounded-lg px-4 py-3 text-sm text-muted-foreground">Carl está pensando…</div>
+            {busy && (
+              <div className="flex justify-start items-end gap-3">
+                <MascoteAnimado estado={estadoCarl} tamanho="pequeno" />
+                <div className="bg-muted rounded-lg px-4 py-3 text-sm text-muted-foreground">
+                  {fala.falando ? "Carl está falando…" : "Carl está pensando…"}
+                </div>
               </div>
             )}
           </div>

@@ -31,7 +31,7 @@ export async function carregarMemorias(supabase: Supa, area?: string | null): Pr
     if (error) return [];
     const todas = (data ?? []) as Memoria[];
     // Memórias sem área valem sempre; com área, só quando a pessoa está nela.
-    return todas.filter((m) => !m.area || !area || m.area === area);
+    return todas.filter((m) => !m.area || m.area === "" || !area || m.area === area);
   } catch {
     return []; // tabela ainda não criada — o Carl segue funcionando sem memória
   }
@@ -42,7 +42,7 @@ export function memoriasParaPrompt(memorias: Memoria[]): string {
   if (!memorias.length) return "";
   const linhas = memorias.map((m) => {
     const escopo = m.escopo === "equipe" ? "equipe" : "você";
-    const area = m.area ? ` · ${m.area}` : "";
+    const area = m.area && m.area !== "" ? ` · ${m.area}` : "";
     return `- (${escopo}${area}) ${m.chave}: ${m.valor}`;
   });
   return linhas.join("\n");
@@ -66,8 +66,10 @@ export function ferramentasDeMemoria(ctx: ContextoDominio) {
       }),
       execute: async ({ chave: k, valor: v, escopo, area }) => {
         try {
+          // A constraint é em colunas puras (user_id, escopo, area, chave) com
+          // area NOT NULL DEFAULT ''. A chave vai normalizada para casar sempre.
           const { error } = await tabela().upsert(
-            { user_id: userId, chave: k, valor: v, escopo, area: area ?? null, origem: "explicita" },
+            { user_id: userId, chave: k.trim().toLowerCase(), valor: v, escopo, area: area ?? "", origem: "explicita" },
             { onConflict: "user_id,escopo,area,chave" },
           );
           const r = error ? { ok: false as const, error: "Não consegui guardar essa informação." } : { ok: true as const, lembrado: k };
@@ -84,7 +86,8 @@ export function ferramentasDeMemoria(ctx: ContextoDominio) {
       inputSchema: z.object({ chave }),
       execute: async ({ chave: k }) => {
         try {
-          const { error } = await tabela().delete().eq("user_id", userId).ilike("chave", k);
+          // eq, não ilike: com ilike, uma chave contendo % apagaria tudo.
+          const { error } = await tabela().delete().eq("user_id", userId).eq("chave", k.trim().toLowerCase());
           const r = error ? { ok: false as const, error: "Não consegui apagar essa memória." } : { ok: true as const, esquecido: k };
           await log("esquecer", { chave: k }, r);
           return r;

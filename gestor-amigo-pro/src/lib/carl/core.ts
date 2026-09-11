@@ -23,6 +23,14 @@ const INDISPONIVEL = {
   error: "O cadastro central ainda não foi criado neste ambiente. Avise o usuário de que a base comum (Fase 0) precisa ser aplicada.",
 };
 
+const NAO_ENCONTRADO = { ok: false as const, error: "Não encontrei esse registro." };
+
+/** Distingue tabela inexistente (Fase 0 não aplicada) de falha de consulta. */
+function tabelaAusente(error: { code?: string } | null | undefined): boolean {
+  const c = error?.code ?? "";
+  return c === "42P01" || c === "PGRST205" || c === "PGRST202";
+}
+
 export function ferramentasDeCore(ctx: ContextoDominio) {
   const { supabase, log, nivel } = ctx;
   const podeEscrever = nivel === "escrita" || nivel === "gestao";
@@ -66,7 +74,8 @@ export function ferramentasDeCore(ctx: ContextoDominio) {
               .in("status", ["open", "in_progress", "waiting"])
               .limit(10),
           ]);
-          if (visao.error || !visao.data) return INDISPONIVEL;
+          if (visao.error) return tabelaAusente(visao.error) ? INDISPONIVEL : NAO_ENCONTRADO;
+          if (!visao.data) return NAO_ENCONTRADO;
           return {
             ok: true as const,
             imovel: visao.data,

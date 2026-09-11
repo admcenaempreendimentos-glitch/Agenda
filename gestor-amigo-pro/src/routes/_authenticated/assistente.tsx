@@ -7,10 +7,11 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { Send, Mic, MicOff, Volume2, VolumeX, Square } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useFala, useEscuta } from "@/hooks/use-voz";
 
 export const Route = createFileRoute("/_authenticated/assistente")({
   component: AssistantPage,
@@ -27,6 +28,17 @@ const toolLabel: Record<string, string> = {
   create_contract: "Contrato criado",
   update_contract: "Contrato atualizado",
   delete_contract: "Exclusão de contrato",
+  lembrar: "Anotado para lembrar",
+  esquecer: "Memória apagada",
+  listar_memorias: "Consultando o que lembra",
+  pesquisar_na_web: "Pesquisou na internet",
+  buscar_imovel: "Procurou o imóvel",
+  situacao_do_imovel: "Situação completa do imóvel",
+  buscar_pessoa: "Procurou a pessoa",
+  pendencias_da_equipe: "Levantou as pendências",
+  cadastrar_imovel: "Imóvel cadastrado",
+  cadastrar_pessoa: "Pessoa cadastrada",
+  vincular_ao_imovel: "Vinculado ao imóvel",
 };
 
 /*
@@ -59,16 +71,42 @@ function MascoteAvatar({ size = 36 }: { size?: number }) {
   );
 }
 
-function MascoteAnimado() {
+type EstadoCarl = "ocioso" | "pensando" | "falando";
+
+/**
+ * O mascote reage ao que o Carl está fazendo: parado quando ocioso, em
+ * movimento enquanto pensa ou fala. É o que tira a sensação de chatbot parado.
+ */
+function MascoteAnimado({ estado = "ocioso" }: { estado?: EstadoCarl }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const ativo = estado !== "ocioso";
+
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (ativo) {
+      v.playbackRate = estado === "pensando" ? 0.75 : 1;
+      void v.play().catch(() => undefined);
+    } else {
+      v.pause();
+      v.currentTime = 0;
+    }
+  }, [ativo, estado]);
+
   return (
     <video
+      ref={videoRef}
       src="/mascote.webm"
       poster="/mascote.png"
-      autoPlay
       loop
       muted
       playsInline
-      className="h-56 w-auto mb-4 drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
+      aria-label={estado === "pensando" ? "Carl pensando" : estado === "falando" ? "Carl falando" : "Carl"}
+      className={`h-56 w-auto mb-4 transition-all duration-500 ${
+        ativo
+          ? "drop-shadow-[0_14px_30px_rgba(191,140,60,0.45)] scale-[1.02]"
+          : "drop-shadow-[0_12px_24px_rgba(0,0,0,0.35)]"
+      }`}
       onError={(e) => {
         // navegadores sem suporte a WebM com alpha caem para a imagem estática
         const el = e.currentTarget;
@@ -81,11 +119,22 @@ function MascoteAnimado() {
   );
 }
 
+const SUGESTOES = [
+  "O que precisa da minha atenção hoje?",
+  "Quais contratos vencem nos próximos 60 dias?",
+  "Tem alguma rodada de minuta parada?",
+  "Como está o IGPM deste mês?",
+];
+
 function AssistantPage() {
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const qc = useQueryClient();
+
+  const fala = useFala();
+  const falaRef = useRef(fala);
+  falaRef.current = fala;
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({
@@ -96,19 +145,35 @@ function AssistantPage() {
           ? { Authorization: `Bearer ${data.session.access_token}` }
           : {};
       },
+      // Diz ao Carl de qual sistema e de qual tela ele está sendo chamado.
+      body: { area: "juridico", tela: "assistente" },
     }),
     onError: (e) => toast.error(e.message),
-    onFinish: () => qc.invalidateQueries(),
+    onFinish: ({ message }) => {
+      qc.invalidateQueries();
+      if (falaRef.current.ligada) {
+        const texto = message.parts.map((p) => (p.type === "text" ? p.text : "")).join(" ").trim();
+        if (texto) falaRef.current.falar(texto);
+      }
+    },
+  });
+
+  const escuta = useEscuta((texto) => {
+    setInput((atual) => (atual ? `${atual} ${texto}` : texto));
+    inputRef.current?.focus();
   });
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages]);
   useEffect(() => { inputRef.current?.focus(); }, [status]);
 
   const busy = status === "submitted" || status === "streaming";
+  const estadoCarl: EstadoCarl = fala.falando ? "falando" : busy ? "pensando" : "ocioso";
 
   async function submit() {
     const text = input.trim();
     if (!text || busy) return;
+    fala.calar();
+    if (escuta.ouvindo) escuta.parar();
     setInput("");
     await sendMessage({ text });
   }
@@ -123,11 +188,23 @@ function AssistantPage() {
       <Card ref={scrollRef} className="flex-1 overflow-y-auto p-6 mb-4">
         {messages.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto">
-            <MascoteAnimado />
+            <MascoteAnimado estado={estadoCarl} />
             <h3 className="font-serif text-lg mb-2">Olá! Eu sou o Carl. Como posso ajudar?</h3>
-            <p className="text-sm text-muted-foreground">
-              Pergunte sobre demandas pendentes, contratos em revisão, prazos de vigência ou peça um resumo do que precisa da sua atenção hoje.
+            <p className="text-sm text-muted-foreground mb-4">
+              Pergunte sobre demandas, contratos e prazos, peça um resumo do dia, ou toque no microfone e fale.
             </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {SUGESTOES.map((sug) => (
+                <button
+                  key={sug}
+                  type="button"
+                  onClick={() => { setInput(sug); inputRef.current?.focus(); }}
+                  className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-accent transition-colors"
+                >
+                  {sug}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -170,17 +247,50 @@ function AssistantPage() {
         )}
       </Card>
 
-      <div className="flex gap-2">
-        <Textarea
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
-          placeholder="Ex.: quais demandas estão pendentes há mais de 7 dias?"
-          rows={2}
-          className="resize-none"
-        />
-        <Button onClick={submit} disabled={busy || !input.trim()} className="self-end">
+      <div className="flex gap-2 items-end">
+        {escuta.suportado && (
+          <Button
+            type="button"
+            variant={escuta.ouvindo ? "default" : "outline"}
+            size="icon"
+            className="self-end"
+            aria-label={escuta.ouvindo ? "Parar de ouvir" : "Falar com o Carl"}
+            title={escuta.ouvindo ? "Parar de ouvir" : "Falar com o Carl"}
+            onClick={() => (escuta.ouvindo ? escuta.parar() : escuta.comecar())}
+          >
+            {escuta.ouvindo ? <MicOff className="h-4 w-4 animate-pulse" /> : <Mic className="h-4 w-4" />}
+          </Button>
+        )}
+        <div className="flex-1">
+          {escuta.ouvindo && (
+            <p className="text-xs text-muted-foreground mb-1 animate-pulse">
+              Ouvindo… {escuta.parcial}
+            </p>
+          )}
+          <Textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
+            placeholder="Pergunte, ou toque no microfone e fale."
+            rows={2}
+            className="resize-none"
+          />
+        </div>
+        {fala.suportado && (
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="self-end"
+            aria-label={fala.falando ? "Parar a fala" : fala.ligada ? "Desligar a voz do Carl" : "Ligar a voz do Carl"}
+            title={fala.falando ? "Parar a fala" : fala.ligada ? "Desligar a voz" : "Ligar a voz"}
+            onClick={() => (fala.falando ? fala.calar() : fala.alternar())}
+          >
+            {fala.falando ? <Square className="h-4 w-4" /> : fala.ligada ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+          </Button>
+        )}
+        <Button onClick={submit} disabled={busy || !input.trim()} className="self-end" aria-label="Enviar">
           <Send className="h-4 w-4" />
         </Button>
       </div>

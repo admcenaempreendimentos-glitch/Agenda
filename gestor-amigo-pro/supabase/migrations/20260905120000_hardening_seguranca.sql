@@ -62,7 +62,8 @@ BEGIN
   EXECUTE format('SELECT EXISTS (SELECT 1 FROM %s WHERE id = $1 AND user_id = $2)', p_table) INTO ok USING p_id, p_user;
   IF NOT ok THEN RAISE EXCEPTION 'Referência a registro de outro usuário não permitida' USING ERRCODE = '42501'; END IF;
 END $$;
-REVOKE ALL ON FUNCTION public.assert_same_owner(regclass, uuid, uuid) FROM PUBLIC, anon;
+REVOKE ALL ON FUNCTION public.assert_same_owner(regclass, uuid, uuid) FROM PUBLIC, anon, authenticated;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM PUBLIC, anon;
 
 CREATE OR REPLACE FUNCTION public.check_contract_refs() RETURNS trigger
 LANGUAGE plpgsql SET search_path = public AS $$

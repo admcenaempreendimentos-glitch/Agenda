@@ -105,7 +105,8 @@ export function CardCustomizer({
   async function save() {
     // Blindagem set/2026: só imagens do armazenamento do próprio sistema.
     // URLs externas rastreiam IP/horário de quem abre o painel e são bloqueadas pela CSP.
-    if (cover) {
+    // Só valida quando o usuário alterou a capa; capas antigas continuam salváveis.
+    if (cover && cover !== (value.cover_image_url ?? "")) {
       let ok = false;
       try {
         const allowed = new URL(import.meta.env.VITE_SUPABASE_URL as string).origin;

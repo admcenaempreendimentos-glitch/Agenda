@@ -7,8 +7,12 @@ import { Toaster } from "@/components/ui/sonner";
 import { useIdleLogout } from "@/hooks/use-idle-logout";
 import { toast } from "sonner";
 
-/** MFA obrigatório para todos (defina VITE_EXIGIR_MFA=false para apenas exigir de quem já cadastrou). */
-const EXIGIR_MFA = import.meta.env.VITE_EXIGIR_MFA !== "false";
+/**
+ * Cadastro de MFA obrigatório para todos quando VITE_EXIGIR_MFA=true (ative após habilitar
+ * TOTP no Supabase). Sem a variável, quem já tem autenticador continua obrigado a usá-lo,
+ * mas ninguém fica preso em /mfa caso o TOTP ainda não esteja habilitado no projeto.
+ */
+const EXIGIR_MFA = import.meta.env.VITE_EXIGIR_MFA === "true";
 /** Minutos sem interação até encerrar a sessão. */
 const INATIVIDADE_MIN = Number(import.meta.env.VITE_INATIVIDADE_MIN ?? 30) || 30;
 

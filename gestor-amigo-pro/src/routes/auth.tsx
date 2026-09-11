@@ -75,7 +75,6 @@ function AuthPage() {
                 id="password"
                 type="password"
                 required
-                minLength={12}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"

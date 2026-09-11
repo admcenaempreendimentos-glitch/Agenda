@@ -78,11 +78,17 @@ function MfaPage() {
 
   async function verify(e: React.FormEvent) {
     e.preventDefault();
-    const factorId = enroll?.id ?? factors[0]?.id;
     const digits = code.replace(/\D/g, "");
-    if (!factorId || digits.length !== 6) return;
+    // Em verificação, o código pode pertencer a qualquer um dos autenticadores cadastrados.
+    const candidatos = enroll ? [enroll.id] : factors.map((f) => f.id);
+    if (!candidatos.length || digits.length !== 6) return;
     setBusy(true);
-    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: digits });
+    let error: unknown = null;
+    for (const factorId of candidatos) {
+      const r = await supabase.auth.mfa.challengeAndVerify({ factorId, code: digits });
+      error = r.error;
+      if (!error) break;
+    }
     setBusy(false);
     if (error) {
       toast.error("Código inválido ou expirado. Tente novamente.");

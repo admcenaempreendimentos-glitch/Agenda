@@ -16,7 +16,7 @@ export function useIdleLogout(minutes: number, onLogout: () => void) {
     const ms = Math.max(1, minutes) * 60_000;
     const fire = async () => {
       try {
-        await supabase.auth.signOut();
+        await supabase.auth.signOut({ scope: "local" }); // só este dispositivo
       } finally {
         cb.current();
       }

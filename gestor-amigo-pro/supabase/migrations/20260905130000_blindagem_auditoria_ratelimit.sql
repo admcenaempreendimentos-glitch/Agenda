@@ -77,28 +77,36 @@ GRANT ALL ON public.api_rate_limits TO service_role;
 ALTER TABLE public.api_rate_limits ENABLE ROW LEVEL SECURITY; -- sem políticas: só a função acessa
 
 -- Retorna TRUE se a requisição está dentro do limite; FALSE se excedeu.
--- Chave = escopo + usuário autenticado. Janela deslizante simples por bucket.
-CREATE OR REPLACE FUNCTION public.rate_limit_hit(p_scope TEXT, p_limit INTEGER, p_window_seconds INTEGER)
+-- Os limites são FIXADOS AQUI por escopo — o chamador não os controla (revisão adversarial).
+-- Chave = escopo + usuário autenticado. Janela fixa por bucket.
+CREATE OR REPLACE FUNCTION public.rate_limit_hit(p_scope TEXT)
 RETURNS BOOLEAN LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   k TEXT;
   v_hits INTEGER;
+  v_limit INTEGER;
+  v_window INTEGER;
 BEGIN
   IF auth.uid() IS NULL THEN RETURN FALSE; END IF;
-  IF p_limit IS NULL OR p_limit < 1 OR p_window_seconds IS NULL OR p_window_seconds < 1 THEN RETURN FALSE; END IF;
-  k := left(coalesce(p_scope, 'default'), 40) || ':' || auth.uid()::text;
+  CASE p_scope
+    WHEN 'chat'   THEN v_limit := 40; v_window := 300;   -- assistente: 40 req / 5 min
+    WHEN 'upload' THEN v_limit := 60; v_window := 3600;  -- reservado
+    ELSE RETURN FALSE;                                   -- escopo desconhecido: nega
+  END CASE;
+  k := p_scope || ':' || auth.uid()::text;
   INSERT INTO public.api_rate_limits(bucket, hits, window_start)
   VALUES (k, 1, now())
   ON CONFLICT (bucket) DO UPDATE SET
-    hits = CASE WHEN public.api_rate_limits.window_start < now() - make_interval(secs => p_window_seconds)
+    hits = CASE WHEN public.api_rate_limits.window_start < now() - make_interval(secs => v_window)
                 THEN 1 ELSE public.api_rate_limits.hits + 1 END,
-    window_start = CASE WHEN public.api_rate_limits.window_start < now() - make_interval(secs => p_window_seconds)
+    window_start = CASE WHEN public.api_rate_limits.window_start < now() - make_interval(secs => v_window)
                         THEN now() ELSE public.api_rate_limits.window_start END
   RETURNING hits INTO v_hits;
-  RETURN v_hits <= p_limit;
+  RETURN v_hits <= v_limit;
 END $$;
-REVOKE ALL ON FUNCTION public.rate_limit_hit(TEXT, INTEGER, INTEGER) FROM PUBLIC, anon;
-GRANT EXECUTE ON FUNCTION public.rate_limit_hit(TEXT, INTEGER, INTEGER) TO authenticated;
+DROP FUNCTION IF EXISTS public.rate_limit_hit(TEXT, INTEGER, INTEGER);
+REVOKE ALL ON FUNCTION public.rate_limit_hit(TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.rate_limit_hit(TEXT) TO authenticated;
 
 -- Limpeza periódica opcional (pg_cron, se habilitado):
 -- SELECT cron.schedule('limpa_rate_limits', '17 * * * *',

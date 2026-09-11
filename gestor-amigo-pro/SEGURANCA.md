@@ -7,14 +7,14 @@
 | Camada | Proteção | Onde |
 |---|---|---|
 | Identidade | Acesso só por convite (autocadastro removido); erro genérico de login; senha mínima 12 | `src/routes/auth.tsx` |
-| Identidade | **MFA obrigatório (TOTP)** — primeiro acesso cadastra o autenticador; toda sessão exige AAL2 | `src/routes/mfa.tsx`, `_authenticated/route.tsx` |
+| Identidade | **MFA (TOTP)** — quem tem autenticador é sempre exigido (interface, API do assistente e, com a migração 140000, o próprio banco); com `VITE_EXIGIR_MFA=true` o cadastro passa a ser obrigatório no primeiro acesso | `src/routes/mfa.tsx`, `_authenticated/route.tsx`, `api/chat.ts` |
 | Sessão | Logout por inatividade (30 min, `VITE_INATIVIDADE_MIN`); logout limpa cache; "encerrar em todos os dispositivos" | `hooks/use-idle-logout.ts`, `seguranca.tsx` |
 | Dados | RLS por usuário em todas as tabelas e buckets; role `anon` sem privilégios; políticas `TO authenticated` | migrações |
 | Dados | Chaves estrangeiras cruzadas validam titularidade; CHECKs de valores/datas/enums; desligar colaborador não apaga registros (RESTRICT) | `20260905120000_hardening_seguranca.sql` |
 | Dados | **Trilha de auditoria por trigger** (autor, antes/depois) — imune ao cliente | `20260905130000_blindagem_auditoria_ratelimit.sql` |
-| Dados | Políticas restritivas exigindo AAL2 no banco (aplicar após todos cadastrarem MFA) | `20260905140000_exigir_mfa_rls.sql` |
-| IA | Dados delimitados/truncados como "dado, nunca instrução"; só texto user/assistant chega ao modelo; exclusões exigem título exato confirmado, máx. 2 por mensagem; ids UUID, datas, enums; erros do banco não vazam; ações registradas e visíveis | `src/routes/api/chat.ts`, `assistente.tsx` |
-| IA | Rate limit distribuído (função SQL) com fallback em memória; limites de corpo/mensagens/passos/tokens | `chat.ts` + migração |
+| Dados | Políticas restritivas exigindo AAL2 no banco para usuários com autenticador (padrão Supabase — pode ser aplicada de imediato) | `20260905140000_exigir_mfa_rls.sql` |
+| IA | Dados delimitados (tag aleatória por requisição, `<`/`>` escapados), truncados e sem caracteres invisíveis; só texto user/assistant chega ao modelo; exclusões exigem que o **usuário escreva o título exato na mensagem** (verificado no servidor), máx. 2 por mensagem; ids UUID, datas, enums; erros do banco não vazam; ações registradas e visíveis | `src/routes/api/chat.ts`, `assistente.tsx` |
+| IA | Rate limit distribuído (função SQL com limites fixados no banco, 40 req/5 min) com fallback em memória; histórico longo é recortado, não rejeitado; limites de corpo/passos/tokens | `chat.ts` + migração |
 | Web | CSP, HSTS, X-Frame-Options, nosniff, Referrer/Permissions-Policy, COOP/CORP, X-Robots-Tag; `robots.txt` | `src/start.ts`, `vercel.json`, `public/robots.txt` |
 | Entrada | Uploads validados (tipo, tamanho, nome); MIME de imagem; capa só do armazenamento do sistema; e-mails colados sem caracteres invisíveis/controle | `contratos/$id.tsx`, `card-customizer.tsx`, `de-email.tsx` |
 | Segredos | `.env` fora do Git; `.env.example`; `.gitignore` bloqueia planilhas/PDF/CSV | raiz e app |
@@ -23,7 +23,7 @@
 
 ### Supabase → Authentication
 - [ ] Providers → Email: **desmarcar "Allow new users to sign up"**; manter "Confirm email".
-- [ ] Multi-Factor: TOTP **habilitado** (necessário para `/mfa`).
+- [ ] Multi-Factor: TOTP **habilitado** (necessário para `/mfa`). Só então defina `VITE_EXIGIR_MFA=true` na Vercel para obrigar o cadastro de todos.
 - [ ] Password: mínimo 12; **bloquear senhas vazadas (HaveIBeenPwned)**.
 - [ ] Attack Protection: CAPTCHA (Turnstile) no login.
 - [ ] Sessions: tempo máximo (ex.: 12 h) e inatividade (ex.: 30 min) — reforça o controle do app.
@@ -34,7 +34,7 @@
 ### Supabase → SQL Editor
 - [ ] Aplicar `20260905120000_hardening_seguranca.sql`.
 - [ ] Aplicar `20260905130000_blindagem_auditoria_ratelimit.sql`.
-- [ ] Depois que todos cadastrarem MFA: aplicar `20260905140000_exigir_mfa_rls.sql`.
+- [ ] Aplicar `20260905140000_exigir_mfa_rls.sql` (segura de imediato: só exige AAL2 de quem já tem autenticador).
 
 ### Vercel
 - [ ] Environment Variables: Production separado de Preview; `LOVABLE_API_KEY` e `SUPABASE_SERVICE_ROLE_KEY` **nunca** em Preview.
@@ -48,6 +48,9 @@
 
 ### Firebase (Agenda)
 - [ ] Realtime Database → Rules: exigir autenticação; ou migrar a Agenda para o Supabase.
+
+### Revisão adversarial das correções (set/2026)
+Uma segunda rodada de agentes tentou quebrar as próprias correções. Foram encontrados e fechados: confirmação de exclusão satisfazível pelo modelo (agora o título precisa constar na mensagem do usuário e o servidor verifica); parâmetros do rate limit controláveis pelo cliente (agora fixos no banco); MFA exigido só no cliente (agora também na API e no banco); função `assert_same_owner` chamável via RPC (revogada); delimitador do snapshot rompível (tag aleatória + escape); senha mínima de 12 no login trancava contas antigas (removida do login, mantida na troca de senha); erro 400 após 40 mensagens (histórico é recortado); só o primeiro autenticador funcionava (todos são testados); logout por inatividade derrubava todos os dispositivos (agora só o atual); capa legada impedia salvar o card. Limitação conhecida mantida: CSP com `'unsafe-inline'` em `script-src` (a hidratação do TanStack Start exige; nonce por requisição fica como próximo passo).
 
 ## 3. Operação e resposta a incidentes
 

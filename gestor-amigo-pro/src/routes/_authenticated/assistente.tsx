@@ -261,7 +261,11 @@ function AssistantPage() {
             size="icon"
             className="self-end"
             aria-label={escuta.ouvindo ? "Parar de ouvir" : "Falar com o Carl"}
-            title={escuta.ouvindo ? "Parar de ouvir" : "Falar com o Carl"}
+            title={
+              escuta.ouvindo
+                ? "Parar de ouvir"
+                : "Falar com o Carl — o áudio é transcrito pelo serviço de voz do navegador (no Chrome, Google)"
+            }
             onClick={() => (escuta.ouvindo ? escuta.parar() : escuta.comecar())}
           >
             {escuta.ouvindo ? <MicOff className="h-4 w-4 animate-pulse" /> : <Mic className="h-4 w-4" />}

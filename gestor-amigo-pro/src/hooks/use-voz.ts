@@ -1,12 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Voz e escuta do Carl — tudo no navegador.
+ * Voz e escuta do Carl pela Web Speech API (gratuita, sem chave).
  *
- * Usa a Web Speech API: gratuita, sem chave, e o áudio NÃO sai do computador do
- * usuário, o que resolve a questão de privacidade (LGPD) de imediato. A voz
- * própria do Carl (Kokoro, offline) fica para a Fase 2; a estrutura aqui já
- * aceita a troca sem mexer nas telas.
+ * Privacidade — o que sai e o que não sai do computador:
+ *  - FALA (síntese): só usamos vozes LOCAIS do aparelho (localService). As vozes
+ *    remotas do navegador (no Chrome, as "Google …") enviam o texto da resposta
+ *    ao fornecedor para sintetizar, por isso são ignoradas. Sem voz local em
+ *    português, o botão de voz não aparece.
+ *  - ESCUTA (microfone): o reconhecimento é do navegador e, em regra, NÃO é
+ *    local — no Chrome o áudio é processado nos servidores do Google; no Edge,
+ *    nos da Microsoft. O botão avisa isso. Ditado inteiramente local depende
+ *    da voz própria prevista para a Fase 2 (Whisper no navegador).
  */
 
 const PREF_VOZ = "carl:voz-ligada";
@@ -20,13 +25,16 @@ type Falante = {
   calar: () => void;
 };
 
-/** Escolhe a melhor voz masculina em português disponível no aparelho. */
+/**
+ * Escolhe a melhor voz masculina em português ENTRE AS LOCAIS do aparelho.
+ * Voz remota fica de fora: a resposta do Carl não deve sair do computador.
+ */
 function melhorVoz(vozes: SpeechSynthesisVoice[]): SpeechSynthesisVoice | undefined {
-  const pt = vozes.filter((v) => v.lang?.toLowerCase().startsWith("pt"));
+  const pt = vozes.filter((v) => v.localService && v.lang?.toLowerCase().startsWith("pt"));
   if (!pt.length) return undefined;
   const br = pt.filter((v) => v.lang?.toLowerCase().includes("br"));
   const candidatas = br.length ? br : pt;
-  const masculina = candidatas.find((v) => /(daniel|ricardo|felipe|male|homem|antonio|google portugu)/i.test(v.name));
+  const masculina = candidatas.find((v) => /(daniel|ricardo|felipe|male|homem|antonio)/i.test(v.name));
   return masculina ?? candidatas[0];
 }
 
@@ -51,14 +59,15 @@ export function useFala(): Falante {
 
   useEffect(() => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    setSuportado(true);
     try {
       setLigada(localStorage.getItem(PREF_VOZ) === "1");
     } catch {
       /* armazenamento bloqueado — segue desligada */
     }
+    // As vozes chegam de forma assíncrona; só há suporte quando existe voz local.
     const carregar = () => {
       vozRef.current = melhorVoz(window.speechSynthesis.getVoices());
+      setSuportado(Boolean(vozRef.current));
     };
     carregar();
     window.speechSynthesis.addEventListener("voiceschanged", carregar);
@@ -90,6 +99,9 @@ export function useFala(): Falante {
   const falar = useCallback(
     (texto: string) => {
       if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+      // Sem voz local não falamos: deixar o navegador escolher poderia cair em voz remota.
+      const voz = vozRef.current;
+      if (!voz) return;
       const limpo = limparParaFala(texto);
       if (!limpo) return;
       window.speechSynthesis.cancel();
@@ -97,7 +109,7 @@ export function useFala(): Falante {
       fala.lang = "pt-BR";
       fala.rate = 0.98; // um senhor calmo, não apressado
       fala.pitch = 0.92;
-      if (vozRef.current) fala.voice = vozRef.current;
+      fala.voice = voz;
       fala.onstart = () => setFalando(true);
       fala.onend = () => setFalando(false);
       fala.onerror = () => setFalando(false);

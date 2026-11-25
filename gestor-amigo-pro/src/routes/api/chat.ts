@@ -516,7 +516,9 @@ async function carregarPendencias(supabase: Supa): Promise<Pendencia[]> {
   try {
     const { data } = await tabela(supabase, "carl_pendencias")
       .select("tipo, titulo, dias")
-      .order("dias", { ascending: false })
+      // 'dias' é negativo quando atrasado: crescente traz primeiro o que mais urge.
+      // (Decrescente cortava justamente os atrasados quando havia mais de 10 itens.)
+      .order("dias", { ascending: true })
       .limit(10);
     return (data ?? []) as Pendencia[];
   } catch {

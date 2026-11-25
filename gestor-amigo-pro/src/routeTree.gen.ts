@@ -9,32 +9,29 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
 import { Route as MfaRouteImport } from './routes/mfa'
-import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
-import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
-import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
-import { Route as AuthenticatedSegurancaRouteImport } from './routes/_authenticated/seguranca'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
-import { Route as AuthenticatedContratosIndexRouteImport } from './routes/_authenticated/contratos/index'
-import { Route as AuthenticatedContratosIdRouteImport } from './routes/_authenticated/contratos/$id'
-import { Route as AuthenticatedContratosNovoRouteImport } from './routes/_authenticated/contratos/novo'
-import { Route as AuthenticatedDemandasIndexRouteImport } from './routes/_authenticated/demandas/index'
-import { Route as AuthenticatedDemandasIdRouteImport } from './routes/_authenticated/demandas/$id'
-import { Route as AuthenticatedDemandasDeEmailRouteImport } from './routes/_authenticated/demandas/de-email'
-import { Route as AuthenticatedDemandasNovaRouteImport } from './routes/_authenticated/demandas/nova'
+import { Route as AuthenticatedSegurancaRouteImport } from './routes/_authenticated/seguranca'
+import { Route as AuthenticatedProcessosRouteImport } from './routes/_authenticated/processos'
+import { Route as AuthenticatedPainelRouteImport } from './routes/_authenticated/painel'
+import { Route as AuthenticatedConfiguracoesRouteImport } from './routes/_authenticated/configuracoes'
+import { Route as AuthenticatedAssistenteRouteImport } from './routes/_authenticated/assistente'
 import { Route as AuthenticatedEscritoriosIndexRouteImport } from './routes/_authenticated/escritorios/index'
+import { Route as AuthenticatedDemandasIndexRouteImport } from './routes/_authenticated/demandas/index'
+import { Route as AuthenticatedContratosIndexRouteImport } from './routes/_authenticated/contratos/index'
 import { Route as AuthenticatedEscritoriosIdRouteImport } from './routes/_authenticated/escritorios/$id'
+import { Route as AuthenticatedDemandasNovaRouteImport } from './routes/_authenticated/demandas/nova'
+import { Route as AuthenticatedDemandasDeEmailRouteImport } from './routes/_authenticated/demandas/de-email'
+import { Route as AuthenticatedDemandasIdRouteImport } from './routes/_authenticated/demandas/$id'
+import { Route as AuthenticatedContratosNovoRouteImport } from './routes/_authenticated/contratos/novo'
+import { Route as AuthenticatedContratosIdRouteImport } from './routes/_authenticated/contratos/$id'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const MfaRoute = MfaRouteImport.update({
+  id: '/mfa',
+  path: '/mfa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -42,14 +39,33 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MfaRoute = MfaRouteImport.update({
-  id: '/mfa',
-  path: '/mfa',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
-  id: '/assistente',
-  path: '/assistente',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedSegurancaRoute = AuthenticatedSegurancaRouteImport.update({
+  id: '/seguranca',
+  path: '/seguranca',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedProcessosRoute = AuthenticatedProcessosRouteImport.update({
+  id: '/processos',
+  path: '/processos',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
+  id: '/painel',
+  path: '/painel',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedConfiguracoesRoute =
@@ -58,37 +74,15 @@ const AuthenticatedConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPainelRoute = AuthenticatedPainelRouteImport.update({
-  id: '/painel',
-  path: '/painel',
+const AuthenticatedAssistenteRoute = AuthenticatedAssistenteRouteImport.update({
+  id: '/assistente',
+  path: '/assistente',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSegurancaRoute = AuthenticatedSegurancaRouteImport.update({
-  id: '/seguranca',
-  path: '/seguranca',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const ApiChatRoute = ApiChatRouteImport.update({
-  id: '/api/chat',
-  path: '/api/chat',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedContratosIndexRoute =
-  AuthenticatedContratosIndexRouteImport.update({
-    id: '/contratos/',
-    path: '/contratos/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedContratosIdRoute =
-  AuthenticatedContratosIdRouteImport.update({
-    id: '/contratos/$id',
-    path: '/contratos/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedContratosNovoRoute =
-  AuthenticatedContratosNovoRouteImport.update({
-    id: '/contratos/novo',
-    path: '/contratos/novo',
+const AuthenticatedEscritoriosIndexRoute =
+  AuthenticatedEscritoriosIndexRouteImport.update({
+    id: '/escritorios/',
+    path: '/escritorios/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDemandasIndexRoute =
@@ -97,15 +91,16 @@ const AuthenticatedDemandasIndexRoute =
     path: '/demandas/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDemandasIdRoute = AuthenticatedDemandasIdRouteImport.update({
-  id: '/demandas/$id',
-  path: '/demandas/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedDemandasDeEmailRoute =
-  AuthenticatedDemandasDeEmailRouteImport.update({
-    id: '/demandas/de-email',
-    path: '/demandas/de-email',
+const AuthenticatedContratosIndexRoute =
+  AuthenticatedContratosIndexRouteImport.update({
+    id: '/contratos/',
+    path: '/contratos/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEscritoriosIdRoute =
+  AuthenticatedEscritoriosIdRouteImport.update({
+    id: '/escritorios/$id',
+    path: '/escritorios/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedDemandasNovaRoute =
@@ -114,16 +109,27 @@ const AuthenticatedDemandasNovaRoute =
     path: '/demandas/nova',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedEscritoriosIndexRoute =
-  AuthenticatedEscritoriosIndexRouteImport.update({
-    id: '/escritorios/',
-    path: '/escritorios/',
+const AuthenticatedDemandasDeEmailRoute =
+  AuthenticatedDemandasDeEmailRouteImport.update({
+    id: '/demandas/de-email',
+    path: '/demandas/de-email',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedEscritoriosIdRoute =
-  AuthenticatedEscritoriosIdRouteImport.update({
-    id: '/escritorios/$id',
-    path: '/escritorios/$id',
+const AuthenticatedDemandasIdRoute = AuthenticatedDemandasIdRouteImport.update({
+  id: '/demandas/$id',
+  path: '/demandas/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedContratosNovoRoute =
+  AuthenticatedContratosNovoRouteImport.update({
+    id: '/contratos/novo',
+    path: '/contratos/novo',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContratosIdRoute =
+  AuthenticatedContratosIdRouteImport.update({
+    id: '/contratos/$id',
+    path: '/contratos/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/processos': typeof AuthenticatedProcessosRoute
   '/seguranca': typeof AuthenticatedSegurancaRoute
   '/api/chat': typeof ApiChatRoute
   '/contratos/$id': typeof AuthenticatedContratosIdRoute
@@ -153,6 +160,7 @@ export interface FileRoutesByTo {
   '/assistente': typeof AuthenticatedAssistenteRoute
   '/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/painel': typeof AuthenticatedPainelRoute
+  '/processos': typeof AuthenticatedProcessosRoute
   '/seguranca': typeof AuthenticatedSegurancaRoute
   '/api/chat': typeof ApiChatRoute
   '/contratos/$id': typeof AuthenticatedContratosIdRoute
@@ -174,6 +182,7 @@ export interface FileRoutesById {
   '/_authenticated/assistente': typeof AuthenticatedAssistenteRoute
   '/_authenticated/configuracoes': typeof AuthenticatedConfiguracoesRoute
   '/_authenticated/painel': typeof AuthenticatedPainelRoute
+  '/_authenticated/processos': typeof AuthenticatedProcessosRoute
   '/_authenticated/seguranca': typeof AuthenticatedSegurancaRoute
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/contratos/$id': typeof AuthenticatedContratosIdRoute
@@ -195,6 +204,7 @@ export interface FileRouteTypes {
     | '/assistente'
     | '/configuracoes'
     | '/painel'
+    | '/processos'
     | '/seguranca'
     | '/api/chat'
     | '/contratos/$id'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/assistente'
     | '/configuracoes'
     | '/painel'
+    | '/processos'
     | '/seguranca'
     | '/api/chat'
     | '/contratos/$id'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/_authenticated/assistente'
     | '/_authenticated/configuracoes'
     | '/_authenticated/painel'
+    | '/_authenticated/processos'
     | '/_authenticated/seguranca'
     | '/api/chat'
     | '/_authenticated/contratos/$id'
@@ -257,18 +269,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+    '/mfa': {
+      id: '/mfa'
+      path: '/mfa'
+      fullPath: '/mfa'
+      preLoaderRoute: typeof MfaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -278,25 +283,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/mfa': {
-      id: '/mfa'
-      path: '/mfa'
-      fullPath: '/mfa'
-      preLoaderRoute: typeof MfaRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/assistente': {
-      id: '/_authenticated/assistente'
-      path: '/assistente'
-      fullPath: '/assistente'
-      preLoaderRoute: typeof AuthenticatedAssistenteRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/seguranca': {
+      id: '/_authenticated/seguranca'
+      path: '/seguranca'
+      fullPath: '/seguranca'
+      preLoaderRoute: typeof AuthenticatedSegurancaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/configuracoes': {
-      id: '/_authenticated/configuracoes'
-      path: '/configuracoes'
-      fullPath: '/configuracoes'
-      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
+    '/_authenticated/processos': {
+      id: '/_authenticated/processos'
+      path: '/processos'
+      fullPath: '/processos'
+      preLoaderRoute: typeof AuthenticatedProcessosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/painel': {
@@ -306,67 +325,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPainelRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/seguranca': {
-      id: '/_authenticated/seguranca'
-      path: '/seguranca'
-      fullPath: '/seguranca'
-      preLoaderRoute: typeof AuthenticatedSegurancaRouteImport
+    '/_authenticated/configuracoes': {
+      id: '/_authenticated/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/configuracoes'
+      preLoaderRoute: typeof AuthenticatedConfiguracoesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/api/chat': {
-      id: '/api/chat'
-      path: '/api/chat'
-      fullPath: '/api/chat'
-      preLoaderRoute: typeof ApiChatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/contratos/': {
-      id: '/_authenticated/contratos/'
-      path: '/contratos'
-      fullPath: '/contratos/'
-      preLoaderRoute: typeof AuthenticatedContratosIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/contratos/$id': {
-      id: '/_authenticated/contratos/$id'
-      path: '/contratos/$id'
-      fullPath: '/contratos/$id'
-      preLoaderRoute: typeof AuthenticatedContratosIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/contratos/novo': {
-      id: '/_authenticated/contratos/novo'
-      path: '/contratos/novo'
-      fullPath: '/contratos/novo'
-      preLoaderRoute: typeof AuthenticatedContratosNovoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/demandas/': {
-      id: '/_authenticated/demandas/'
-      path: '/demandas'
-      fullPath: '/demandas/'
-      preLoaderRoute: typeof AuthenticatedDemandasIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/demandas/$id': {
-      id: '/_authenticated/demandas/$id'
-      path: '/demandas/$id'
-      fullPath: '/demandas/$id'
-      preLoaderRoute: typeof AuthenticatedDemandasIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/demandas/de-email': {
-      id: '/_authenticated/demandas/de-email'
-      path: '/demandas/de-email'
-      fullPath: '/demandas/de-email'
-      preLoaderRoute: typeof AuthenticatedDemandasDeEmailRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/demandas/nova': {
-      id: '/_authenticated/demandas/nova'
-      path: '/demandas/nova'
-      fullPath: '/demandas/nova'
-      preLoaderRoute: typeof AuthenticatedDemandasNovaRouteImport
+    '/_authenticated/assistente': {
+      id: '/_authenticated/assistente'
+      path: '/assistente'
+      fullPath: '/assistente'
+      preLoaderRoute: typeof AuthenticatedAssistenteRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/escritorios/': {
@@ -376,11 +346,60 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedEscritoriosIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/demandas/': {
+      id: '/_authenticated/demandas/'
+      path: '/demandas'
+      fullPath: '/demandas/'
+      preLoaderRoute: typeof AuthenticatedDemandasIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contratos/': {
+      id: '/_authenticated/contratos/'
+      path: '/contratos'
+      fullPath: '/contratos/'
+      preLoaderRoute: typeof AuthenticatedContratosIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/escritorios/$id': {
       id: '/_authenticated/escritorios/$id'
       path: '/escritorios/$id'
       fullPath: '/escritorios/$id'
       preLoaderRoute: typeof AuthenticatedEscritoriosIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/demandas/nova': {
+      id: '/_authenticated/demandas/nova'
+      path: '/demandas/nova'
+      fullPath: '/demandas/nova'
+      preLoaderRoute: typeof AuthenticatedDemandasNovaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/demandas/de-email': {
+      id: '/_authenticated/demandas/de-email'
+      path: '/demandas/de-email'
+      fullPath: '/demandas/de-email'
+      preLoaderRoute: typeof AuthenticatedDemandasDeEmailRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/demandas/$id': {
+      id: '/_authenticated/demandas/$id'
+      path: '/demandas/$id'
+      fullPath: '/demandas/$id'
+      preLoaderRoute: typeof AuthenticatedDemandasIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contratos/novo': {
+      id: '/_authenticated/contratos/novo'
+      path: '/contratos/novo'
+      fullPath: '/contratos/novo'
+      preLoaderRoute: typeof AuthenticatedContratosNovoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/contratos/$id': {
+      id: '/_authenticated/contratos/$id'
+      path: '/contratos/$id'
+      fullPath: '/contratos/$id'
+      preLoaderRoute: typeof AuthenticatedContratosIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -390,6 +409,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAssistenteRoute: typeof AuthenticatedAssistenteRoute
   AuthenticatedConfiguracoesRoute: typeof AuthenticatedConfiguracoesRoute
   AuthenticatedPainelRoute: typeof AuthenticatedPainelRoute
+  AuthenticatedProcessosRoute: typeof AuthenticatedProcessosRoute
   AuthenticatedSegurancaRoute: typeof AuthenticatedSegurancaRoute
   AuthenticatedContratosIdRoute: typeof AuthenticatedContratosIdRoute
   AuthenticatedContratosNovoRoute: typeof AuthenticatedContratosNovoRoute
@@ -406,6 +426,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAssistenteRoute: AuthenticatedAssistenteRoute,
   AuthenticatedConfiguracoesRoute: AuthenticatedConfiguracoesRoute,
   AuthenticatedPainelRoute: AuthenticatedPainelRoute,
+  AuthenticatedProcessosRoute: AuthenticatedProcessosRoute,
   AuthenticatedSegurancaRoute: AuthenticatedSegurancaRoute,
   AuthenticatedContratosIdRoute: AuthenticatedContratosIdRoute,
   AuthenticatedContratosNovoRoute: AuthenticatedContratosNovoRoute,

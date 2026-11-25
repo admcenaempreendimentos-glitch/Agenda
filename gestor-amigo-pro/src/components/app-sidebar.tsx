@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { LayoutDashboard, Building2, ListChecks, FileText, Sparkles, LogOut, Settings, Moon, Sun, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Building2, ListChecks, FileText, Sparkles, LogOut, Settings, Moon, Sun, ShieldCheck, Scale } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -21,6 +21,7 @@ const items = [
   { title: "Escritórios", url: "/escritorios", icon: Building2 },
   { title: "Demandas", url: "/demandas", icon: ListChecks },
   { title: "Contratos", url: "/contratos", icon: FileText },
+  { title: "Processos", url: "/processos", icon: Scale },
   { title: "Assistente IA", url: "/assistente", icon: Sparkles },
   { title: "Integrações", url: "/configuracoes", icon: Settings },
   { title: "Segurança", url: "/seguranca", icon: ShieldCheck },
